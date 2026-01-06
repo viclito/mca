@@ -3,6 +3,7 @@ import Semester from "@/lib/models/Semester";
 import dbConnect from "@/lib/db";
 import { auth } from "@/auth";
 import slugify from "slugify";
+import Degree from "@/lib/models/Degree";
 
 export async function GET(req: Request) {
   try {
@@ -17,6 +18,7 @@ export async function GET(req: Request) {
     
     return NextResponse.json(semesters);
   } catch (error) {
+    console.error(error);
     return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
   }
 }
