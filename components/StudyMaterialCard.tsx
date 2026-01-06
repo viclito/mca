@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ExternalLink, BookOpen, FileText } from "lucide-react";
+import { ExternalLink, BookOpen, FileText, Download } from "lucide-react";
 
 interface StudyMaterialCardProps {
   title: string;
@@ -12,6 +12,17 @@ interface StudyMaterialCardProps {
 }
 
 export function StudyMaterialCard({ title, type, url, contentId, basePath }: StudyMaterialCardProps) {
+  // Function to convert Google Drive view link to download link
+  const getDownloadUrl = (viewUrl: string) => {
+    if (viewUrl.includes('drive.google.com')) {
+      const match = viewUrl.match(/\/d\/(.+?)\//) || viewUrl.match(/id=(.+?)(&|$)/);
+      if (match && match[1]) {
+        return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+      }
+    }
+    return viewUrl;
+  };
+
   return (
     <Card className="flex items-center justify-between p-4 hover:shadow-md transition-shadow">
       <div className="flex items-center gap-4 min-w-0">
@@ -20,7 +31,7 @@ export function StudyMaterialCard({ title, type, url, contentId, basePath }: Stu
         </div>
         <div className="min-w-0">
           <h4 className="font-medium truncate pr-4 text-sm md:text-base">{title}</h4>
-          <p className="text-xs text-muted-foreground">PDF Document</p>
+          <p className="text-xs text-muted-foreground">{type === 'pdf' ? 'PDF Document' : 'Video'}</p>
         </div>
       </div>
       
@@ -30,6 +41,14 @@ export function StudyMaterialCard({ title, type, url, contentId, basePath }: Stu
                  <ExternalLink className="mr-2 h-4 w-4" /> Drive
              </a>
          </Button>
+
+         {type === "pdf" && (
+           <Button variant="outline" size="icon" asChild title="Download PDF" className="h-9 w-9 hidden sm:flex">
+              <a href={getDownloadUrl(url)} download target="_blank" rel="noopener noreferrer">
+                <Download className="h-4 w-4" />
+              </a>
+           </Button>
+         )}
          
          <Button size="sm" asChild>
              <Link href={`${basePath}/read/${contentId}`}>
