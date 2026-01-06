@@ -71,3 +71,42 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
   }
 }
+
+export async function PUT(req: Request) {
+  try {
+    const session = await auth();
+    if (!session || !session.user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id, name } = await req.json();
+    if (!id || !name) {
+      return NextResponse.json({ message: "ID and Name are required" }, { status: 400 });
+    }
+
+    await dbConnect();
+
+    const slug = slugify(name, { lower: true, strict: true });
+    
+    // Check if another degree has the same slug
+    const existing = await Degree.findOne({ slug, _id: { $ne: id } });
+    if (existing) {
+        return NextResponse.json({ message: "Degree name already exists" }, { status: 400 });
+    }
+
+    const degree = await Degree.findByIdAndUpdate(
+      id,
+      { name, slug },
+      { new: true }
+    );
+
+    if (!degree) {
+      return NextResponse.json({ message: "Degree not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(degree);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+  }
+}

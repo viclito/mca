@@ -79,3 +79,34 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
   }
 }
+
+export async function PUT(req: Request) {
+  try {
+    const session = await auth();
+    if (!session || !session.user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id, title, type, url, unitId } = await req.json();
+    if (!id || !title || !type || !url || !unitId) {
+      return NextResponse.json({ message: "All fields are required" }, { status: 400 });
+    }
+
+    await dbConnect();
+
+    const content = await Content.findByIdAndUpdate(
+      id,
+      { title, type, url, unitId },
+      { new: true }
+    ).populate('unitId');
+
+    if (!content) {
+      return NextResponse.json({ message: "Content not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(content);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+  }
+}

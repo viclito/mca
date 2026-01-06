@@ -20,7 +20,7 @@ import {
   SheetClose
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2, Trash } from "lucide-react";
+import { Plus, Loader2, Trash, Pencil } from "lucide-react";
 
 interface Degree {
   _id: string;
@@ -52,10 +52,17 @@ export default function SubjectsPage() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   
   const [newSubjectName, setNewSubjectName] = useState("");
   const [selectedDegree, setSelectedDegree] = useState("");
   const [selectedSemester, setSelectedSemester] = useState("");
+
+  const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDegreeId, setEditDegreeId] = useState("");
+  const [editSemesterId, setEditSemesterId] = useState("");
+  const [editFilteredSemesters, setEditFilteredSemesters] = useState<Semester[]>([]);
 
   useEffect(() => {
     fetchDegrees();
@@ -70,6 +77,14 @@ export default function SubjectsPage() {
       setFilteredSemesters([]);
     }
   }, [selectedDegree, semesters]);
+
+  useEffect(() => {
+    if (editDegreeId) {
+      setEditFilteredSemesters(semesters.filter(s => s.degreeId === editDegreeId || (s.degreeId as any)._id === editDegreeId));
+    } else {
+      setEditFilteredSemesters([]);
+    }
+  }, [editDegreeId, semesters]);
 
   async function fetchDegrees() {
     const res = await fetch("/api/admin/degrees");
@@ -113,6 +128,35 @@ export default function SubjectsPage() {
       }
     } finally {
       setIsCreating(false);
+    }
+  }
+
+  async function handleUpdate() {
+    if (!editingSubject || !editName || !editSemesterId) return;
+    setIsUpdating(true);
+    try {
+      const res = await fetch("/api/admin/subjects", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+            id: editingSubject._id, 
+            name: editName, 
+            semesterId: editSemesterId 
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSubjects(subjects.map(s => s._id === updated._id ? updated : s));
+        setEditingSubject(null);
+      } else {
+        const err = await res.json();
+        alert(err.message || "Failed to update subject");
+      }
+    } catch (error) {
+       console.error(error);
+       alert("Error updating subject");
+    } finally {
+      setIsUpdating(false);
     }
   }
 
@@ -181,7 +225,7 @@ export default function SubjectsPage() {
                     </SelectContent>
                   </Select>
                </div>
-               <div className="space-y-2">
+                <div className="space-y-2">
                   <label className="text-sm font-medium">Subject Name</label>
                   <Input 
                     placeholder="e.g. Data Structures" 
@@ -201,6 +245,57 @@ export default function SubjectsPage() {
             </SheetFooter>
           </SheetContent>
         </Sheet>
+
+        {/* Edit Subject Sheet */}
+        <Sheet open={!!editingSubject} onOpenChange={(open) => !open && setEditingSubject(null)}>
+          <SheetContent>
+            <SheetHeader>
+              <SheetTitle>Edit Subject</SheetTitle>
+              <SheetDescription>
+                Update subject details and associations.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="py-6 space-y-4">
+               <div className="space-y-2">
+                  <label className="text-sm font-medium">Degree</label>
+                  <Select onValueChange={setEditDegreeId} value={editDegreeId}>
+                    <SelectTrigger><SelectValue placeholder="Select Degree" /></SelectTrigger>
+                    <SelectContent>
+                      {degrees.map((d) => (
+                        <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+               </div>
+               <div className="space-y-2">
+                  <label className="text-sm font-medium">Semester</label>
+                  <Select onValueChange={setEditSemesterId} value={editSemesterId} disabled={!editDegreeId}>
+                    <SelectTrigger><SelectValue placeholder="Select Semester" /></SelectTrigger>
+                    <SelectContent>
+                      {editFilteredSemesters.map((s) => (
+                        <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+               </div>
+               <div className="space-y-2">
+                  <label className="text-sm font-medium">Subject Name</label>
+                  <Input 
+                    placeholder="e.g. Data Structures" 
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+               </div>
+            </div>
+            <SheetFooter>
+                <Button variant="outline" onClick={() => setEditingSubject(null)}>Cancel</Button>
+                <Button onClick={handleUpdate} disabled={isUpdating || !editSemesterId || !editName}>
+                    {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Update Subject
+                </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -213,14 +308,29 @@ export default function SubjectsPage() {
                 <Card key={sub._id}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="font-semibold text-lg">{sub.name}</CardTitle>
-                         <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-muted-foreground hover:text-red-500"
-                            onClick={() => handleDelete(sub._id)}
-                        >
-                             <Trash className="h-4 w-4" />
-                        </Button>
+                         <div className="flex items-center gap-1">
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-muted-foreground hover:text-blue-500"
+                                onClick={() => {
+                                    setEditingSubject(sub);
+                                    setEditName(sub.name);
+                                    setEditDegreeId(sub.semesterId?.degreeId?._id || "");
+                                    setEditSemesterId(sub.semesterId?._id || "");
+                                }}
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-muted-foreground hover:text-red-500"
+                                onClick={() => handleDelete(sub._id)}
+                            >
+                                 <Trash className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent>
                          <div className="text-sm text-foreground/80 mb-1">

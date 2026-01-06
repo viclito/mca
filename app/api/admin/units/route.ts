@@ -78,3 +78,42 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
   }
 }
+
+export async function PUT(req: Request) {
+  try {
+    const session = await auth();
+    if (!session || !session.user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { id, name, subjectId } = await req.json();
+    if (!id || !name || !subjectId) {
+      return NextResponse.json({ message: "ID, Name and Subject are required" }, { status: 400 });
+    }
+
+    await dbConnect();
+
+    const slug = slugify(name, { lower: true, strict: true });
+    
+    const unit = await Unit.findByIdAndUpdate(
+      id,
+      { name, slug, subjectId },
+      { new: true }
+    ).populate({
+        path: 'subjectId',
+        populate: {
+            path: 'semesterId',
+            populate: { path: 'degreeId' }
+        }
+    });
+
+    if (!unit) {
+      return NextResponse.json({ message: "Unit not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(unit);
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+  }
+}

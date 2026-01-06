@@ -20,7 +20,7 @@ import {
   SheetClose
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2, Trash } from "lucide-react";
+import { Plus, Loader2, Trash, Pencil } from "lucide-react";
 import { format } from "date-fns";
 
 interface Degree {
@@ -41,8 +41,12 @@ export default function SemestersPage() {
   const [degrees, setDegrees] = useState<Degree[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [newSemesterName, setNewSemesterName] = useState("");
   const [selectedDegree, setSelectedDegree] = useState("");
+  const [editingSemester, setEditingSemester] = useState<Semester | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDegreeId, setEditDegreeId] = useState("");
 
   useEffect(() => {
     fetchDegrees();
@@ -85,6 +89,35 @@ export default function SemestersPage() {
       }
     } finally {
       setIsCreating(false);
+    }
+  }
+
+  async function handleUpdate() {
+    if (!editingSemester || !editName || !editDegreeId) return;
+    setIsUpdating(true);
+    try {
+      const res = await fetch("/api/admin/semesters", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          id: editingSemester._id, 
+          name: editName, 
+          degreeId: editDegreeId 
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setSemesters(semesters.map(s => s._id === updated._id ? updated : s));
+        setEditingSemester(null);
+      } else {
+        const err = await res.json();
+        alert(err.message || "Failed to update semester");
+      }
+    } catch (error) {
+       console.error(error);
+       alert("Error updating semester");
+    } finally {
+      setIsUpdating(false);
     }
   }
 
@@ -160,6 +193,48 @@ export default function SemestersPage() {
             </SheetFooter>
           </SheetContent>
         </Sheet>
+
+        {/* Edit Semester Sheet */}
+        <Sheet open={!!editingSemester} onOpenChange={(open) => !open && setEditingSemester(null)}>
+          <SheetContent>
+            <SheetHeader>
+              <SheetTitle>Edit Semester</SheetTitle>
+              <SheetDescription>
+                Update the semester details.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="py-6 space-y-4">
+               <div className="space-y-2">
+                  <label className="text-sm font-medium">Degree</label>
+                  <Select onValueChange={setEditDegreeId} value={editDegreeId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select Degree" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {degrees.map((d) => (
+                        <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+               </div>
+               <div className="space-y-2">
+                  <label className="text-sm font-medium">Semester Name</label>
+                  <Input 
+                    placeholder="e.g. Semester 1" 
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+               </div>
+            </div>
+            <SheetFooter>
+                <Button variant="outline" onClick={() => setEditingSemester(null)}>Cancel</Button>
+                <Button onClick={handleUpdate} disabled={isUpdating || !editDegreeId || !editName}>
+                    {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Update Semester
+                </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -172,14 +247,28 @@ export default function SemestersPage() {
                 <Card key={sem._id}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="font-semibold text-lg">{sem.name}</CardTitle>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-muted-foreground hover:text-red-500"
-                            onClick={() => handleDelete(sem._id)}
-                        >
-                             <Trash className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-muted-foreground hover:text-blue-500"
+                                onClick={() => {
+                                    setEditingSemester(sem);
+                                    setEditName(sem.name);
+                                    setEditDegreeId(sem.degreeId?._id || "");
+                                }}
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-muted-foreground hover:text-red-500"
+                                onClick={() => handleDelete(sem._id)}
+                            >
+                                 <Trash className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent>
                          <p className="text-sm font-medium text-foreground/80 mb-2">{sem.degreeId?.name || "Unknown Degree"}</p>

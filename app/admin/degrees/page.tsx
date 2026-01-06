@@ -20,7 +20,7 @@ import {
   SheetFooter,
   SheetClose
 } from "@/components/ui/sheet";
-import { Plus, Loader2, Trash } from "lucide-react";
+import { Plus, Loader2, Trash, Pencil } from "lucide-react";
 import { format } from "date-fns";
 
 interface Degree {
@@ -34,7 +34,10 @@ export default function DegreesPage() {
   const [degrees, setDegrees] = useState<Degree[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const [newDegreeName, setNewDegreeName] = useState("");
+  const [editingDegree, setEditingDegree] = useState<Degree | null>(null);
+  const [editName, setEditName] = useState("");
 
   useEffect(() => {
     fetchDegrees();
@@ -72,6 +75,31 @@ export default function DegreesPage() {
        console.error(error);
     } finally {
       setIsCreating(false);
+    }
+  }
+
+  async function handleUpdate() {
+    if (!editingDegree || !editName) return;
+    setIsUpdating(true);
+    try {
+      const res = await fetch("/api/admin/degrees", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: editingDegree._id, name: editName }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setDegrees(degrees.map(d => d._id === updated._id ? updated : d));
+        setEditingDegree(null);
+      } else {
+        const err = await res.json();
+        alert(err.message || "Failed to update degree");
+      }
+    } catch (error) {
+       console.error(error);
+       alert("Error updating degree");
+    } finally {
+      setIsUpdating(false);
     }
   }
 
@@ -133,6 +161,35 @@ export default function DegreesPage() {
             </SheetFooter>
           </SheetContent>
         </Sheet>
+
+        {/* Edit Degree Sheet */}
+        <Sheet open={!!editingDegree} onOpenChange={(open) => !open && setEditingDegree(null)}>
+          <SheetContent>
+            <SheetHeader>
+              <SheetTitle>Edit Degree</SheetTitle>
+              <SheetDescription>
+                Update the degree program details.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="py-6 space-y-4">
+               <div className="space-y-2">
+                  <label className="text-sm font-medium">Degree Name</label>
+                  <Input 
+                    placeholder="Degree Name" 
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+               </div>
+            </div>
+            <SheetFooter>
+                <Button variant="outline" onClick={() => setEditingDegree(null)}>Cancel</Button>
+                <Button onClick={handleUpdate} disabled={isUpdating}>
+                    {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Update Degree
+                </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -145,14 +202,27 @@ export default function DegreesPage() {
                 <Card key={degree._id}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="font-semibold text-lg">{degree.name}</CardTitle>
-                        <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-muted-foreground hover:text-red-500"
-                            onClick={() => handleDelete(degree._id)}
-                        >
-                             <Trash className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-muted-foreground hover:text-blue-500"
+                                onClick={() => {
+                                    setEditingDegree(degree);
+                                    setEditName(degree.name);
+                                }}
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-muted-foreground hover:text-red-500"
+                                onClick={() => handleDelete(degree._id)}
+                            >
+                                 <Trash className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent>
                         <p className="text-xs text-muted-foreground">Slug: {degree.slug}</p>

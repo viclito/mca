@@ -20,7 +20,7 @@ import {
   SheetClose
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2, Trash } from "lucide-react";
+import { Plus, Loader2, Trash, Pencil } from "lucide-react";
 
 interface Degree { _id: string; name: string; }
 interface Semester { _id: string; name: string; degreeId: string; }
@@ -51,11 +51,21 @@ export default function UnitsPage() {
   
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   
   const [newUnitName, setNewUnitName] = useState("");
   const [selectedDegree, setSelectedDegree] = useState("");
   const [selectedSemester, setSelectedSemester] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
+
+  const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editDegreeId, setEditDegreeId] = useState("");
+  const [editSemesterId, setEditSemesterId] = useState("");
+  const [editSubjectId, setEditSubjectId] = useState("");
+  
+  const [editFilteredSemesters, setEditFilteredSemesters] = useState<Semester[]>([]);
+  const [editFilteredSubjects, setEditFilteredSubjects] = useState<Subject[]>([]);
 
   useEffect(() => {
     fetchDegrees();
@@ -82,6 +92,22 @@ export default function UnitsPage() {
       }
       setSelectedSubject("");
   }, [selectedSemester, subjects]);
+
+  useEffect(() => {
+    if (editDegreeId) {
+      setEditFilteredSemesters(semesters.filter(s => s.degreeId === editDegreeId || (s.degreeId as any)._id === editDegreeId));
+    } else {
+      setEditFilteredSemesters([]);
+    }
+  }, [editDegreeId, semesters]);
+
+  useEffect(() => {
+    if (editSemesterId) {
+      setEditFilteredSubjects(subjects.filter(s => s.semesterId === editSemesterId || (s.semesterId as any)._id === editSemesterId));
+    } else {
+      setEditFilteredSubjects([]);
+    }
+  }, [editSemesterId, subjects]);
 
 
   async function fetchDegrees() {
@@ -126,6 +152,35 @@ export default function UnitsPage() {
       }
     } finally {
       setIsCreating(false);
+    }
+  }
+
+  async function handleUpdate() {
+    if (!editingUnit || !editName || !editSubjectId) return;
+    setIsUpdating(true);
+    try {
+      const res = await fetch("/api/admin/units", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+            id: editingUnit._id, 
+            name: editName, 
+            subjectId: editSubjectId 
+        }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setUnits(units.map(u => u._id === updated._id ? updated : u));
+        setEditingUnit(null);
+      } else {
+        const err = await res.json();
+        alert(err.message || "Failed to update unit");
+      }
+    } catch (error) {
+       console.error(error);
+       alert("Error updating unit");
+    } finally {
+      setIsUpdating(false);
     }
   }
 
@@ -227,6 +282,68 @@ export default function UnitsPage() {
             </SheetFooter>
           </SheetContent>
         </Sheet>
+
+        {/* Edit Unit Sheet */}
+        <Sheet open={!!editingUnit} onOpenChange={(open) => !open && setEditingUnit(null)}>
+          <SheetContent>
+            <SheetHeader>
+              <SheetTitle>Edit Unit</SheetTitle>
+              <SheetDescription>
+                Update unit details and associations.
+              </SheetDescription>
+            </SheetHeader>
+            <div className="py-6 space-y-4">
+               <div className="space-y-2">
+                  <label className="text-sm font-medium">Degree</label>
+                  <Select onValueChange={setEditDegreeId} value={editDegreeId}>
+                    <SelectTrigger><SelectValue placeholder="Select Degree" /></SelectTrigger>
+                    <SelectContent>
+                      {degrees.map((d) => (
+                        <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+               </div>
+               <div className="space-y-2">
+                  <label className="text-sm font-medium">Semester</label>
+                  <Select onValueChange={setEditSemesterId} value={editSemesterId} disabled={!editDegreeId}>
+                    <SelectTrigger><SelectValue placeholder="Select Semester" /></SelectTrigger>
+                    <SelectContent>
+                      {editFilteredSemesters.map((s) => (
+                        <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+               </div>
+               <div className="space-y-2">
+                  <label className="text-sm font-medium">Subject</label>
+                  <Select onValueChange={setEditSubjectId} value={editSubjectId} disabled={!editSemesterId}>
+                    <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
+                    <SelectContent>
+                      {editFilteredSubjects.map((s) => (
+                        <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+               </div>
+               <div className="space-y-2">
+                  <label className="text-sm font-medium">Unit Name</label>
+                  <Input 
+                    placeholder="e.g. Unit 1" 
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                  />
+               </div>
+            </div>
+            <SheetFooter>
+                <Button variant="outline" onClick={() => setEditingUnit(null)}>Cancel</Button>
+                <Button onClick={handleUpdate} disabled={isUpdating || !editSubjectId || !editName}>
+                    {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                    Update Unit
+                </Button>
+            </SheetFooter>
+          </SheetContent>
+        </Sheet>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -239,14 +356,30 @@ export default function UnitsPage() {
                 <Card key={unit._id}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="font-semibold text-lg">{unit.name}</CardTitle>
-                         <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="h-8 w-8 text-muted-foreground hover:text-red-500"
-                            onClick={() => handleDelete(unit._id)}
-                        >
-                             <Trash className="h-4 w-4" />
-                        </Button>
+                         <div className="flex items-center gap-1">
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-muted-foreground hover:text-blue-500"
+                                onClick={() => {
+                                    setEditingUnit(unit);
+                                    setEditName(unit.name);
+                                    setEditDegreeId(unit.subjectId?.semesterId?.degreeId?._id || "");
+                                    setEditSemesterId(unit.subjectId?.semesterId?._id || "");
+                                    setEditSubjectId(unit.subjectId?._id || "");
+                                }}
+                            >
+                                <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-muted-foreground hover:text-red-500"
+                                onClick={() => handleDelete(unit._id)}
+                            >
+                                 <Trash className="h-4 w-4" />
+                            </Button>
+                        </div>
                     </CardHeader>
                     <CardContent>
                          <div className="text-sm text-foreground/80 mb-1">
