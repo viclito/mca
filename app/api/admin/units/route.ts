@@ -1,0 +1,56 @@
+import { NextResponse } from "next/server";
+import Unit from "@/lib/models/Unit";
+import dbConnect from "@/lib/db";
+import { auth } from "@/auth";
+import slugify from "slugify";
+
+export async function GET(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const subjectId = searchParams.get("subjectId");
+
+    await dbConnect();
+
+    const query = subjectId ? { subjectId } : {};
+    const units = await Unit.find(query).populate({
+        path: 'subjectId',
+        populate: { 
+            path: 'semesterId',
+            populate: { path: 'degreeId' }
+        }
+    }).sort({ name: 1 });
+
+    return NextResponse.json(units);
+  } catch (error) {
+    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    if (!session || !session.user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { name, subjectId } = await req.json();
+    if (!name || !subjectId) {
+      return NextResponse.json({ message: "Name and Subject provided are required" }, { status: 400 });
+    }
+
+    await dbConnect();
+
+    const slug = slugify(name, { lower: true, strict: true });
+    
+    const unit = await Unit.create({
+      name,
+      slug,
+      subjectId
+    });
+
+    return NextResponse.json(unit, { status: 201 });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+  }
+}

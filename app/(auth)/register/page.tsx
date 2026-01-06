@@ -1,0 +1,138 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+
+export default function RegisterPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setIsLoading(true);
+    setError("");
+    setSuccess("");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      setIsLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.message || "Registration failed");
+      } else {
+        setSuccess("Registration successful! Please check your email for approval status (mocked). Wait for admin approval.");
+         // Clear form
+         setEmail("");
+         setPassword("");
+         setConfirmPassword("");
+      }
+    } catch {
+      setError("An unexpected error occurred.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <Card className="glass border-0 shadow-lg dark:bg-gray-900/50 dark:backdrop-blur-xl">
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-2xl font-bold tracking-tight text-center">
+          Admin Register
+        </CardTitle>
+        <CardDescription className="text-center">
+          Create an account to request admin access
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {success ? (
+          <div className="text-center space-y-4">
+             <div className="text-green-600 bg-green-100 p-3 rounded-md dark:bg-green-900/30 dark:text-green-400">
+                {success}
+             </div>
+             <Button variant="outline" className="w-full" onClick={() => router.push('/login')}>
+                Back to Login
+             </Button>
+          </div>
+        ) : (
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Input
+              type="email"
+              placeholder="Email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="bg-white/50 dark:bg-gray-800/50"
+            />
+          </div>
+          <div className="space-y-2">
+            <Input
+              type="password"
+              placeholder="Password"
+              required
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="bg-white/50 dark:bg-gray-800/50"
+            />
+          </div>
+          <div className="space-y-2">
+            <Input
+              type="password"
+              placeholder="Confirm Password"
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="bg-white/50 dark:bg-gray-800/50"
+            />
+          </div>
+           {error && <p className="text-sm text-red-500 text-center">{error}</p>}
+          <Button type="submit" className="w-full" disabled={isLoading}>
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+            Register
+          </Button>
+        </form>
+        )}
+      </CardContent>
+      {!success && (
+      <CardFooter className="flex justify-center">
+        <p className="text-sm text-muted-foreground">
+          Already have an account?{" "}
+          <Link href="/login" className="text-primary hover:underline">
+            Login
+          </Link>
+        </p>
+      </CardFooter>
+      )}
+    </Card>
+  );
+}
