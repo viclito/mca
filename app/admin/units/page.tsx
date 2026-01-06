@@ -129,6 +129,24 @@ export default function UnitsPage() {
     }
   }
 
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this unit? This will not delete actual content items but will break the structural link.")) return;
+    
+    try {
+      const res = await fetch(`/api/admin/units?id=${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setUnits(units.filter(u => u._id !== id));
+      } else {
+        alert("Failed to delete unit");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error deleting unit");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -221,7 +239,12 @@ export default function UnitsPage() {
                 <Card key={unit._id}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="font-semibold text-lg">{unit.name}</CardTitle>
-                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500">
+                         <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-muted-foreground hover:text-red-500"
+                            onClick={() => handleDelete(unit._id)}
+                        >
                              <Trash className="h-4 w-4" />
                         </Button>
                     </CardHeader>

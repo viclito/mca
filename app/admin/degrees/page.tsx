@@ -75,6 +75,24 @@ export default function DegreesPage() {
     }
   }
 
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this degree? This will not delete sub-items but may break references.")) return;
+    
+    try {
+      const res = await fetch(`/api/admin/degrees?id=${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setDegrees(degrees.filter(d => d._id !== id));
+      } else {
+        alert("Failed to delete degree");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error deleting degree");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -127,7 +145,12 @@ export default function DegreesPage() {
                 <Card key={degree._id}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="font-semibold text-lg">{degree.name}</CardTitle>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500">
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-muted-foreground hover:text-red-500"
+                            onClick={() => handleDelete(degree._id)}
+                        >
                              <Trash className="h-4 w-4" />
                         </Button>
                     </CardHeader>

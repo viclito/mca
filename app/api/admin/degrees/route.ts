@@ -47,3 +47,27 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
   }
 }
+
+export async function DELETE(req: Request) {
+  try {
+    const session = await auth();
+    if (!session || !session.user) {
+      return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
+    }
+
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) {
+      return NextResponse.json({ message: "ID is required" }, { status: 400 });
+    }
+
+    await dbConnect();
+    await Degree.findByIdAndDelete(id);
+
+    return NextResponse.json({ message: "Degree deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+  }
+}

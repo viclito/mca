@@ -149,6 +149,24 @@ export default function ContentPage() {
     }
   }
 
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this content item?")) return;
+    
+    try {
+      const res = await fetch(`/api/admin/content?id=${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setContentList(contentList.filter(c => c._id !== id));
+      } else {
+        alert("Failed to delete content");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error deleting content");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -255,7 +273,12 @@ export default function ContentPage() {
                         <CardTitle className="font-semibold text-lg line-clamp-1">{c.title}</CardTitle>
                         <div className="flex items-center gap-2">
                             {c.type === "video" ? <VideoIcon className="h-4 w-4 text-blue-500" /> : <FileText className="h-4 w-4 text-red-500" />}
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500">
+                            <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="h-8 w-8 text-muted-foreground hover:text-red-500"
+                                onClick={() => handleDelete(c._id)}
+                            >
                                 <Trash className="h-4 w-4" />
                             </Button>
                         </div>

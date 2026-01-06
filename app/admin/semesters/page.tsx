@@ -88,6 +88,24 @@ export default function SemestersPage() {
     }
   }
 
+  async function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this semester? This will not delete sub-items but may break references.")) return;
+    
+    try {
+      const res = await fetch(`/api/admin/semesters?id=${id}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setSemesters(semesters.filter(s => s._id !== id));
+      } else {
+        alert("Failed to delete semester");
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Error deleting semester");
+    }
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -154,7 +172,12 @@ export default function SemestersPage() {
                 <Card key={sem._id}>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="font-semibold text-lg">{sem.name}</CardTitle>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-red-500">
+                        <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="h-8 w-8 text-muted-foreground hover:text-red-500"
+                            onClick={() => handleDelete(sem._id)}
+                        >
                              <Trash className="h-4 w-4" />
                         </Button>
                     </CardHeader>
