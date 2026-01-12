@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Loader2, Trash, Pencil } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Degree {
   _id: string;
@@ -45,14 +46,9 @@ interface Subject {
 }
 
 export default function SubjectsPage() {
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [degrees, setDegrees] = useState<Degree[]>([]);
-  const [semesters, setSemesters] = useState<Semester[]>([]);
   const [filteredSemesters, setFilteredSemesters] = useState<Semester[]>([]);
   
-  const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
   
   const [newSubjectName, setNewSubjectName] = useState("");
   const [selectedDegree, setSelectedDegree] = useState("");
@@ -64,11 +60,37 @@ export default function SubjectsPage() {
   const [editSemesterId, setEditSemesterId] = useState("");
   const [editFilteredSemesters, setEditFilteredSemesters] = useState<Semester[]>([]);
 
-  useEffect(() => {
-    fetchDegrees();
-    fetchSemesters();
-    fetchSubjects();
-  }, []);
+  const queryClient = useQueryClient();
+
+  // Fetch Degrees
+  const { data: degrees = [] } = useQuery<Degree[]>({
+    queryKey: ["degrees"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/degrees");
+      if (!res.ok) throw new Error("Failed to fetch degrees");
+      return res.json();
+    },
+  });
+
+  // Fetch Semesters
+  const { data: semesters = [] } = useQuery<Semester[]>({
+    queryKey: ["semesters"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/semesters");
+      if (!res.ok) throw new Error("Failed to fetch semesters");
+      return res.json();
+    },
+  });
+
+  // Fetch Subjects
+  const { data: subjects = [], isLoading: isLoadingSubjects } = useQuery<Subject[]>({
+    queryKey: ["subjects"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/subjects");
+      if (!res.ok) throw new Error("Failed to fetch subjects");
+      return res.json();
+    },
+  });
 
   useEffect(() => {
     if (selectedDegree) {
@@ -86,96 +108,99 @@ export default function SubjectsPage() {
     }
   }, [editDegreeId, semesters]);
 
-  async function fetchDegrees() {
-    const res = await fetch("/api/admin/degrees");
-    const data = await res.json();
-    setDegrees(data);
-  }
-
-  async function fetchSemesters() {
-    const res = await fetch("/api/admin/semesters");
-    const data = await res.json();
-    setSemesters(data);
-  }
-
-  async function fetchSubjects() {
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/admin/subjects");
-      const data = await res.json();
-      setSubjects(data);
-    } catch (error) {
-       console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  async function handleCreate() {
-    if (!newSubjectName || !selectedSemester) return;
-    setIsCreating(true);
-    try {
+  // Create Subject
+  const createMutation = useMutation({
+    mutationFn: async ({ name, semesterId }: { name: string; semesterId: string }) => {
       const res = await fetch("/api/admin/subjects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newSubjectName, semesterId: selectedSemester }),
+        body: JSON.stringify({ name, semesterId }),
       });
-      if (res.ok) {
-        setNewSubjectName("");
-        fetchSubjects();
-      } else {
-          alert("Failed to create subject");
-      }
-    } finally {
+      if (!res.ok) throw new Error("Failed to create subject");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      setNewSubjectName("");
       setIsCreating(false);
-    }
-  }
+    },
+    onError: () => {
+      alert("Failed to create subject");
+      setIsCreating(false);
+    },
+  });
 
-  async function handleUpdate() {
-    if (!editingSubject || !editName || !editSemesterId) return;
-    setIsUpdating(true);
-    try {
+  // Update Subject
+  const updateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      name,
+      semesterId,
+    }: {
+      id: string;
+      name: string;
+      semesterId: string;
+    }) => {
       const res = await fetch("/api/admin/subjects", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-            id: editingSubject._id, 
-            name: editName, 
-            semesterId: editSemesterId 
-        }),
+        body: JSON.stringify({ id, name, semesterId }),
       });
-      if (res.ok) {
-        const updated = await res.json();
-        setSubjects(subjects.map(s => s._id === updated._id ? updated : s));
-        setEditingSubject(null);
-      } else {
+      if (!res.ok) {
         const err = await res.json();
-        alert(err.message || "Failed to update subject");
+        throw new Error(err.message || "Failed to update subject");
       }
-    } catch (error) {
-       console.error(error);
-       alert("Error updating subject");
-    } finally {
-      setIsUpdating(false);
-    }
-  }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subjects"] });
+      setEditingSubject(null);
+    },
+    onError: (error) => {
+      alert(error.message);
+    },
+  });
 
-  async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this subject? This will not delete sub-items but may break references.")) return;
-    
-    try {
+  // Delete Subject
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
       const res = await fetch(`/api/admin/subjects?id=${id}`, {
         method: "DELETE",
       });
-      if (res.ok) {
-        setSubjects(subjects.filter(s => s._id !== id));
-      } else {
-        alert("Failed to delete subject");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Error deleting subject");
-    }
+      if (!res.ok) throw new Error("Failed to delete subject");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["subjects"] });
+    },
+    onError: () => {
+      alert("Failed to delete subject");
+    },
+  });
+
+
+  function handleCreate() {
+    if (!newSubjectName || !selectedSemester) return;
+    setIsCreating(true);
+    createMutation.mutate({ name: newSubjectName, semesterId: selectedSemester });
+  }
+
+  function handleUpdate() {
+    if (!editingSubject || !editName || !editSemesterId) return;
+    updateMutation.mutate({
+      id: editingSubject._id,
+      name: editName,
+      semesterId: editSemesterId,
+    });
+  }
+
+  function handleDelete(id: string) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this subject? This will not delete sub-items but may break references."
+      )
+    )
+      return;
+    deleteMutation.mutate(id);
   }
 
   return (
@@ -238,8 +263,8 @@ export default function SubjectsPage() {
                 <SheetClose asChild>
                     <Button variant="outline">Cancel</Button>
                 </SheetClose>
-                <Button onClick={handleCreate} disabled={isCreating || !selectedSemester || !newSubjectName}>
-                    {isCreating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                <Button onClick={handleCreate} disabled={createMutation.isPending || !selectedSemester || !newSubjectName}>
+                    {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Create Subject
                 </Button>
             </SheetFooter>
@@ -289,8 +314,8 @@ export default function SubjectsPage() {
             </div>
             <SheetFooter>
                 <Button variant="outline" onClick={() => setEditingSubject(null)}>Cancel</Button>
-                <Button onClick={handleUpdate} disabled={isUpdating || !editSemesterId || !editName}>
-                    {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                <Button onClick={handleUpdate} disabled={updateMutation.isPending || !editSemesterId || !editName}>
+                    {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Update Subject
                 </Button>
             </SheetFooter>
@@ -299,7 +324,7 @@ export default function SubjectsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
+        {isLoadingSubjects ? (
             <p>Loading...</p>
         ) : subjects.length === 0 ? (
             <p className="text-muted-foreground col-span-full text-center py-10">No subjects found.</p>

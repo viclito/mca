@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Loader2, Trash, Pencil } from "lucide-react";
-import { format } from "date-fns";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Degree {
   _id: string;
@@ -37,118 +37,139 @@ interface Semester {
 }
 
 export default function SemestersPage() {
-  const [semesters, setSemesters] = useState<Semester[]>([]);
-  const [degrees, setDegrees] = useState<Degree[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
   const [newSemesterName, setNewSemesterName] = useState("");
   const [selectedDegree, setSelectedDegree] = useState("");
   const [editingSemester, setEditingSemester] = useState<Semester | null>(null);
   const [editName, setEditName] = useState("");
   const [editDegreeId, setEditDegreeId] = useState("");
 
-  useEffect(() => {
-    fetchDegrees();
-    fetchSemesters();
-  }, []);
+  const queryClient = useQueryClient();
 
-  async function fetchDegrees() {
-    const res = await fetch("/api/admin/degrees");
-    const data = await res.json();
-    setDegrees(data);
-  }
+  // Fetch Degrees
+  const { data: degrees = [] } = useQuery<Degree[]>({
+    queryKey: ["degrees"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/degrees");
+      if (!res.ok) throw new Error("Failed to fetch degrees");
+      return res.json();
+    },
+  });
 
-  async function fetchSemesters() {
-    setIsLoading(true);
-    try {
+  // Fetch Semesters
+  const { data: semesters = [], isLoading: isLoadingSemesters } = useQuery<Semester[]>({
+    queryKey: ["semesters"],
+    queryFn: async () => {
       const res = await fetch("/api/admin/semesters");
-      const data = await res.json();
-      setSemesters(data);
-    } catch (error) {
-       console.error(error);
-    } finally {
-      setIsLoading(false);
-    }
-  }
+      if (!res.ok) throw new Error("Failed to fetch semesters");
+      return res.json();
+    },
+  });
 
-  async function handleCreate() {
-    if (!newSemesterName || !selectedDegree) return;
-    setIsCreating(true);
-    try {
+  // Create Semester
+  const createMutation = useMutation({
+    mutationFn: async ({ name, degreeId }: { name: string; degreeId: string }) => {
       const res = await fetch("/api/admin/semesters", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newSemesterName, degreeId: selectedDegree }),
+        body: JSON.stringify({ name, degreeId }),
       });
-      if (res.ok) {
-        setNewSemesterName("");
-        fetchSemesters();
-      } else {
-          alert("Failed to create semester");
-      }
-    } finally {
+      if (!res.ok) throw new Error("Failed to create semester");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["semesters"] });
+      setNewSemesterName("");
       setIsCreating(false);
-    }
-  }
+    },
+    onError: () => {
+      alert("Failed to create semester");
+      setIsCreating(false);
+    },
+  });
 
-  async function handleUpdate() {
-    if (!editingSemester || !editName || !editDegreeId) return;
-    setIsUpdating(true);
-    try {
+  // Update Semester
+  const updateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      name,
+      degreeId,
+    }: {
+      id: string;
+      name: string;
+      degreeId: string;
+    }) => {
       const res = await fetch("/api/admin/semesters", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          id: editingSemester._id, 
-          name: editName, 
-          degreeId: editDegreeId 
-        }),
+        body: JSON.stringify({ id, name, degreeId }),
       });
-      if (res.ok) {
-        const updated = await res.json();
-        setSemesters(semesters.map(s => s._id === updated._id ? updated : s));
-        setEditingSemester(null);
-      } else {
+      if (!res.ok) {
         const err = await res.json();
-        alert(err.message || "Failed to update semester");
+        throw new Error(err.message || "Failed to update semester");
       }
-    } catch (error) {
-       console.error(error);
-       alert("Error updating semester");
-    } finally {
-      setIsUpdating(false);
-    }
-  }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["semesters"] });
+      setEditingSemester(null);
+    },
+    onError: (error) => {
+      alert(error.message);
+    },
+  });
 
-  async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this semester? This will not delete sub-items but may break references.")) return;
-    
-    try {
+  // Delete Semester
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
       const res = await fetch(`/api/admin/semesters?id=${id}`, {
         method: "DELETE",
       });
-      if (res.ok) {
-        setSemesters(semesters.filter(s => s._id !== id));
-      } else {
-        alert("Failed to delete semester");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Error deleting semester");
-    }
+      if (!res.ok) throw new Error("Failed to delete semester");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["semesters"] });
+    },
+    onError: () => {
+      alert("Failed to delete semester");
+    },
+  });
+
+  function handleCreate() {
+    if (!newSemesterName || !selectedDegree) return;
+    setIsCreating(true);
+    createMutation.mutate({ name: newSemesterName, degreeId: selectedDegree });
+  }
+
+  function handleUpdate() {
+    if (!editingSemester || !editName || !editDegreeId) return;
+    updateMutation.mutate({
+      id: editingSemester._id,
+      name: editName,
+      degreeId: editDegreeId,
+    });
+  }
+
+  function handleDelete(id: string) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this semester? This will not delete sub-items but may break references."
+      )
+    )
+      return;
+    deleteMutation.mutate(id);
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-           <h2 className="text-3xl font-bold tracking-tight">Semesters</h2>
-           <p className="text-muted-foreground">Manage semesters within degrees.</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="hidden md:block">
+           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Semesters</h2>
+           <p className="text-sm md:text-base text-muted-foreground">Manage semesters within degrees.</p>
         </div>
         <Sheet>
           <SheetTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" /> Add Semester
             </Button>
           </SheetTrigger>
@@ -186,8 +207,8 @@ export default function SemestersPage() {
                 <SheetClose asChild>
                     <Button variant="outline">Cancel</Button>
                 </SheetClose>
-                <Button onClick={handleCreate} disabled={isCreating || !selectedDegree || !newSemesterName}>
-                    {isCreating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                <Button onClick={handleCreate} disabled={createMutation.isPending || !selectedDegree || !newSemesterName}>
+                    {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Create Semester
                 </Button>
             </SheetFooter>
@@ -228,8 +249,8 @@ export default function SemestersPage() {
             </div>
             <SheetFooter>
                 <Button variant="outline" onClick={() => setEditingSemester(null)}>Cancel</Button>
-                <Button onClick={handleUpdate} disabled={isUpdating || !editDegreeId || !editName}>
-                    {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                <Button onClick={handleUpdate} disabled={updateMutation.isPending || !editDegreeId || !editName}>
+                    {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Update Semester
                 </Button>
             </SheetFooter>
@@ -238,7 +259,7 @@ export default function SemestersPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
+        {isLoadingSemesters ? (
             <p>Loading...</p>
         ) : semesters.length === 0 ? (
             <p className="text-muted-foreground col-span-full text-center py-10">No semesters found.</p>

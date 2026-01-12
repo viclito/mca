@@ -24,9 +24,9 @@ export async function GET(req: Request) {
     }).sort({ name: 1 });
 
     return NextResponse.json(units);
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ message: "Internal Server Error", error: error.message }, { status: 500 });
   }
 }
 
@@ -53,9 +53,9 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(unit, { status: 201 });
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ message: "Internal Server Error", error: error.message }, { status: 500 });
   }
 }
 
@@ -77,9 +77,9 @@ export async function DELETE(req: Request) {
     await Unit.findByIdAndDelete(id);
 
     return NextResponse.json({ message: "Unit deleted successfully" });
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ message: "Internal Server Error", error: error.message }, { status: 500 });
   }
 }
 
@@ -116,8 +116,8 @@ export async function PUT(req: Request) {
     }
 
     return NextResponse.json(unit);
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ message: "Internal Server Error", error: error.message }, { status: 500 });
   }
 }

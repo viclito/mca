@@ -13,13 +13,11 @@ export async function GET(req: Request) {
     await dbConnect();
     
     const query = degreeId ? { degreeId } : {};
-    // Populate degree to show degree name in list
     const semesters = await Semester.find(query).populate("degreeId").sort({ name: 1 });
-    
     return NextResponse.json(semesters);
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ message: "Internal Server Error", error: error.message }, { status: 500 });
   }
 }
 

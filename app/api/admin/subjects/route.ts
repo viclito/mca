@@ -20,9 +20,9 @@ export async function GET(req: Request) {
     }).sort({ name: 1 });
 
     return NextResponse.json(subjects);
-  } catch (error) {
+  } catch (error: any) {
     console.error(error);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+    return NextResponse.json({ message: "Internal Server Error", error: error.message }, { status: 500 });
   }
 }
 

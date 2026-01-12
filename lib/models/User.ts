@@ -13,8 +13,8 @@ const UserSchema = new Schema(
     },
     role: {
       type: String,
-      enum: ["admin", "super_admin"],
-      default: "admin",
+      enum: ["admin", "super_admin", "student"],
+      default: "student",
     },
     isApproved: {
       type: Boolean,
@@ -23,6 +23,11 @@ const UserSchema = new Schema(
   },
   { timestamps: true }
 );
+
+// Prevent duplicate model compilation in dev with Hot Reload
+if (process.env.NODE_ENV !== "production") {
+    delete models.User;
+}
 
 const User = models.User || model("User", UserSchema);
 

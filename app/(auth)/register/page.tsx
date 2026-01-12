@@ -14,6 +14,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useMutation } from "@tanstack/react-query";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -22,45 +23,47 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
-    setSuccess("");
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
+  const registerMutation = useMutation({
+    mutationFn: async (data: any) => {
       const res = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(data),
       });
 
-      const data = await res.json();
-
+      const responseData = await res.json();
       if (!res.ok) {
-        setError(data.message || "Registration failed");
-      } else {
-        setSuccess("Registration successful! Please check your email for approval status (mocked). Wait for admin approval.");
-         // Clear form
-         setEmail("");
-         setPassword("");
-         setConfirmPassword("");
+        throw new Error(responseData.message || "Registration failed");
       }
-    } catch {
-      setError("An unexpected error occurred.");
-    } finally {
-      setIsLoading(false);
+      return responseData;
+    },
+    onSuccess: () => {
+      setSuccess(
+        "Registration successful! Please check your email for approval status (mocked). Wait for admin approval."
+      );
+      setEmail("");
+      setPassword("");
+      setConfirmPassword("");
+    },
+    onError: (err: Error) => {
+      setError(err.message || "An unexpected error occurred.");
+    },
+  });
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setSuccess("");
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
     }
+
+    registerMutation.mutate({ email, password });
   }
 
   return (
@@ -116,8 +119,8 @@ export default function RegisterPage() {
             />
           </div>
            {error && <p className="text-sm text-red-500 text-center">{error}</p>}
-          <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+          <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
+            {registerMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Register
           </Button>
         </form>

@@ -14,8 +14,11 @@ import {
   LogOut,
   Settings,
   Menu,
-  X
+  X,
+  Megaphone
 } from "lucide-react";
+
+
 import { signOut } from "next-auth/react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -26,8 +29,11 @@ const sidebarItems = [
   { label: "Semesters", href: "/admin/semesters", icon: LibraryBig },
   { label: "Subjects", href: "/admin/subjects", icon: BookOpen },
   { label: "Units", href: "/admin/units", icon: Layers },
+  { label: "Units", href: "/admin/units", icon: Layers },
   { label: "Content", href: "/admin/content", icon: FileVideo },
+  { label: "Notifications", href: "/admin/notifications", icon: Megaphone },
 ];
+
 
 function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
   const pathname = usePathname();

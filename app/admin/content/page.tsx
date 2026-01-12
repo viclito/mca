@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Loader2, Trash, Pencil, FileText, Video as VideoIcon } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Degree { _id: string; name: string; }
 interface Semester { _id: string; name: string; degreeId: string; }
@@ -50,17 +51,10 @@ interface Content {
 }
 
 export default function ContentPage() {
-  const [contentList, setContentList] = useState<Content[]>([]);
-  const [degrees, setDegrees] = useState<Degree[]>([]);
-  const [semesters, setSemesters] = useState<Semester[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [units, setUnits] = useState<Unit[]>([]);
-  
   const [filteredSemesters, setFilteredSemesters] = useState<Semester[]>([]);
   const [filteredSubjects, setFilteredSubjects] = useState<Subject[]>([]);
   const [filteredUnits, setFilteredUnits] = useState<Unit[]>([]);
   
-  const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   
   const [title, setTitle] = useState("");
@@ -85,15 +79,57 @@ export default function ContentPage() {
   const [editFilteredSubjects, setEditFilteredSubjects] = useState<Subject[]>([]);
   const [editFilteredUnits, setEditFilteredUnits] = useState<Unit[]>([]);
   
-  const [isUpdating, setIsUpdating] = useState(false);
+  const queryClient = useQueryClient();
 
-  useEffect(() => {
-    fetchDegrees();
-    fetchSemesters();
-    fetchSubjects();
-    fetchUnits();
-    fetchContent();
-  }, []);
+  // Fetch Degrees
+  const { data: degrees = [] } = useQuery<Degree[]>({
+    queryKey: ["degrees"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/degrees");
+      if (!res.ok) throw new Error("Failed to fetch degrees");
+      return res.json();
+    },
+  });
+
+  // Fetch Semesters
+  const { data: semesters = [] } = useQuery<Semester[]>({
+    queryKey: ["semesters"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/semesters");
+      if (!res.ok) throw new Error("Failed to fetch semesters");
+      return res.json();
+    },
+  });
+
+  // Fetch Subjects
+  const { data: subjects = [] } = useQuery<Subject[]>({
+    queryKey: ["subjects"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/subjects");
+      if (!res.ok) throw new Error("Failed to fetch subjects");
+      return res.json();
+    },
+  });
+
+  // Fetch Units
+  const { data: units = [] } = useQuery<Unit[]>({
+    queryKey: ["units"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/units");
+      if (!res.ok) throw new Error("Failed to fetch units");
+      return res.json();
+    },
+  });
+
+  // Fetch Content
+  const { data: contentList = [], isLoading: isLoadingContent } = useQuery<Content[]>({
+    queryKey: ["content"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/content");
+      if (!res.ok) throw new Error("Failed to fetch content");
+      return res.json();
+    },
+  });
 
   useEffect(() => {
     if (selectedDegree) {
@@ -101,7 +137,7 @@ export default function ContentPage() {
     } else {
         setFilteredSemesters([]);
     }
-    setSelectedSemester("");
+    // Only reset if needed, simplified for better UX
   }, [selectedDegree, semesters]);
 
   useEffect(() => {
@@ -110,7 +146,6 @@ export default function ContentPage() {
       } else {
           setFilteredSubjects([]);
       }
-      setSelectedSubject("");
   }, [selectedSemester, subjects]);
 
   useEffect(() => {
@@ -119,7 +154,6 @@ export default function ContentPage() {
       } else {
           setFilteredUnits([]);
       }
-      setSelectedUnit("");
   }, [selectedSubject, units]);
 
   useEffect(() => {
@@ -147,106 +181,111 @@ export default function ContentPage() {
   }, [editSubjectId, units]);
 
 
-  async function fetchDegrees() {
-    const res = await fetch("/api/admin/degrees");
-    setDegrees(await res.json());
-  }
-  async function fetchSemesters() {
-    const res = await fetch("/api/admin/semesters");
-    setSemesters(await res.json());
-  }
-  async function fetchSubjects() {
-      const res = await fetch("/api/admin/subjects");
-      setSubjects(await res.json());
-  }
-  async function fetchUnits() {
-      const res = await fetch("/api/admin/units");
-      setUnits(await res.json());
-  }
-
-  async function fetchContent() {
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/admin/content");
-      setContentList(await res.json());
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  async function handleCreate() {
-    if (!title || !url || !selectedUnit) return;
-    setIsCreating(true);
-    try {
+  // Create Content
+  const createMutation = useMutation({
+    mutationFn: async ({
+      title,
+      type,
+      url,
+      unitId,
+    }: {
+      title: string;
+      type: "video" | "pdf";
+      url: string;
+      unitId: string;
+    }) => {
       const res = await fetch("/api/admin/content", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-            title, 
-            type, 
-            url, 
-            unitId: selectedUnit 
-        }),
+        body: JSON.stringify({ title, type, url, unitId }),
       });
-      if (res.ok) {
-        setTitle("");
-        setUrl("");
-        fetchContent();
-      } else {
-          alert("Failed to create content");
-      }
-    } finally {
+      if (!res.ok) throw new Error("Failed to create content");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["content"] });
+      setTitle("");
+      setUrl("");
       setIsCreating(false);
-    }
-  }
+    },
+    onError: () => {
+      alert("Failed to create content");
+      setIsCreating(false);
+    },
+  });
 
-  async function handleUpdate() {
-    if (!editingContent || !editTitle || !editUrl || !editUnitId) return;
-    setIsUpdating(true);
-    try {
+  // Update Content
+  const updateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      title,
+      type,
+      url,
+      unitId,
+    }: {
+      id: string;
+      title: string;
+      type: "video" | "pdf";
+      url: string;
+      unitId: string;
+    }) => {
       const res = await fetch("/api/admin/content", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-            id: editingContent._id, 
-            title: editTitle, 
-            type: editType, 
-            url: editUrl, 
-            unitId: editUnitId 
-        }),
+        body: JSON.stringify({ id, title, type, url, unitId }),
       });
-      if (res.ok) {
-        const updated = await res.json();
-        setContentList(contentList.map(c => c._id === updated._id ? updated : c));
-        setEditingContent(null);
-      } else {
+      if (!res.ok) {
         const err = await res.json();
-        alert(err.message || "Failed to update content");
+        throw new Error(err.message || "Failed to update content");
       }
-    } catch (error) {
-       console.error(error);
-       alert("Error updating content");
-    } finally {
-      setIsUpdating(false);
-    }
-  }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["content"] });
+      setEditingContent(null);
+    },
+    onError: (error) => {
+      alert(error.message);
+    },
+  });
 
-  async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this content item?")) return;
-    
-    try {
+  // Delete Content
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
       const res = await fetch(`/api/admin/content?id=${id}`, {
         method: "DELETE",
       });
-      if (res.ok) {
-        setContentList(contentList.filter(c => c._id !== id));
-      } else {
-        alert("Failed to delete content");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Error deleting content");
-    }
+      if (!res.ok) throw new Error("Failed to delete content");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["content"] });
+    },
+    onError: () => {
+      alert("Failed to delete content");
+    },
+  });
+
+
+  function handleCreate() {
+    if (!title || !url || !selectedUnit) return;
+    setIsCreating(true);
+    createMutation.mutate({ title, type, url, unitId: selectedUnit });
+  }
+
+  function handleUpdate() {
+    if (!editingContent || !editTitle || !editUrl || !editUnitId) return;
+    updateMutation.mutate({
+      id: editingContent._id,
+      title: editTitle,
+      type: editType,
+      url: editUrl,
+      unitId: editUnitId,
+    });
+  }
+
+  function handleDelete(id: string) {
+    if (!confirm("Are you sure you want to delete this content item?")) return;
+    deleteMutation.mutate(id);
   }
 
   return (
@@ -334,8 +373,8 @@ export default function ContentPage() {
                 <SheetClose asChild>
                     <Button variant="outline">Cancel</Button>
                 </SheetClose>
-                <Button onClick={handleCreate} disabled={isCreating || !selectedUnit || !title || !url}>
-                    {isCreating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                <Button onClick={handleCreate} disabled={createMutation.isPending || !selectedUnit || !title || !url}>
+                    {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Add Content
                 </Button>
             </SheetFooter>
@@ -414,8 +453,8 @@ export default function ContentPage() {
             </div>
             <SheetFooter>
                 <Button variant="outline" onClick={() => setEditingContent(null)}>Cancel</Button>
-                <Button onClick={handleUpdate} disabled={isUpdating || !editUnitId || !editTitle || !editUrl}>
-                    {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                <Button onClick={handleUpdate} disabled={updateMutation.isPending || !editUnitId || !editTitle || !editUrl}>
+                    {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Update Content
                 </Button>
             </SheetFooter>
@@ -424,7 +463,7 @@ export default function ContentPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
+        {isLoadingContent ? (
             <p>Loading...</p>
         ) : contentList.length === 0 ? (
             <p className="text-muted-foreground col-span-full text-center py-10">No content found.</p>

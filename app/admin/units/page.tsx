@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Loader2, Trash, Pencil } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 interface Degree { _id: string; name: string; }
 interface Semester { _id: string; name: string; degreeId: string; }
@@ -41,17 +42,10 @@ interface Unit {
 }
 
 export default function UnitsPage() {
-  const [units, setUnits] = useState<Unit[]>([]);
-  const [degrees, setDegrees] = useState<Degree[]>([]);
-  const [semesters, setSemesters] = useState<Semester[]>([]);
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  
   const [filteredSemesters, setFilteredSemesters] = useState<Semester[]>([]);
   const [filteredSubjects, setFilteredSubjects] = useState<Subject[]>([]);
   
-  const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
-  const [isUpdating, setIsUpdating] = useState(false);
   
   const [newUnitName, setNewUnitName] = useState("");
   const [selectedDegree, setSelectedDegree] = useState("");
@@ -67,12 +61,47 @@ export default function UnitsPage() {
   const [editFilteredSemesters, setEditFilteredSemesters] = useState<Semester[]>([]);
   const [editFilteredSubjects, setEditFilteredSubjects] = useState<Subject[]>([]);
 
-  useEffect(() => {
-    fetchDegrees();
-    fetchSemesters();
-    fetchSubjects();
-    fetchUnits();
-  }, []);
+  const queryClient = useQueryClient();
+
+  // Fetch Degrees
+  const { data: degrees = [] } = useQuery<Degree[]>({
+    queryKey: ["degrees"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/degrees");
+      if (!res.ok) throw new Error("Failed to fetch degrees");
+      return res.json();
+    },
+  });
+
+  // Fetch Semesters
+  const { data: semesters = [] } = useQuery<Semester[]>({
+    queryKey: ["semesters"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/semesters");
+      if (!res.ok) throw new Error("Failed to fetch semesters");
+      return res.json();
+    },
+  });
+
+  // Fetch Subjects
+  const { data: subjects = [] } = useQuery<Subject[]>({
+    queryKey: ["subjects"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/subjects");
+      if (!res.ok) throw new Error("Failed to fetch subjects");
+      return res.json();
+    },
+  });
+
+  // Fetch Units
+  const { data: units = [], isLoading: isLoadingUnits } = useQuery<Unit[]>({
+    queryKey: ["units"],
+    queryFn: async () => {
+      const res = await fetch("/api/admin/units");
+      if (!res.ok) throw new Error("Failed to fetch units");
+      return res.json();
+    },
+  });
 
   useEffect(() => {
     if (selectedDegree) {
@@ -80,17 +109,15 @@ export default function UnitsPage() {
     } else {
         setFilteredSemesters([]);
     }
-    setSelectedSemester("");
-    setSelectedSubject("");
+    // Only clear selection if needed
   }, [selectedDegree, semesters]);
-
+  
   useEffect(() => {
       if (selectedSemester) {
           setFilteredSubjects(subjects.filter(s => s.semesterId === selectedSemester || (s.semesterId as any)._id === selectedSemester));
       } else {
           setFilteredSubjects([]);
       }
-      setSelectedSubject("");
   }, [selectedSemester, subjects]);
 
   useEffect(() => {
@@ -109,109 +136,111 @@ export default function UnitsPage() {
     }
   }, [editSemesterId, subjects]);
 
-
-  async function fetchDegrees() {
-    const res = await fetch("/api/admin/degrees");
-    setDegrees(await res.json());
-  }
-
-  async function fetchSemesters() {
-    const res = await fetch("/api/admin/semesters");
-    setSemesters(await res.json());
-  }
-  
-  async function fetchSubjects() {
-      const res = await fetch("/api/admin/subjects");
-      setSubjects(await res.json());
-  }
-
-  async function fetchUnits() {
-    setIsLoading(true);
-    try {
-      const res = await fetch("/api/admin/units");
-      setUnits(await res.json());
-    } finally {
-      setIsLoading(false);
-    }
-  }
-
-  async function handleCreate() {
-    if (!newUnitName || !selectedSubject) return;
-    setIsCreating(true);
-    try {
+  // Create Unit
+  const createMutation = useMutation({
+    mutationFn: async ({ name, subjectId }: { name: string; subjectId: string }) => {
       const res = await fetch("/api/admin/units", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newUnitName, subjectId: selectedSubject }),
+        body: JSON.stringify({ name, subjectId }),
       });
-      if (res.ok) {
-        setNewUnitName("");
-        fetchUnits();
-      } else {
-          alert("Failed to create unit");
-      }
-    } finally {
+      if (!res.ok) throw new Error("Failed to create unit");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["units"] });
+      setNewUnitName("");
       setIsCreating(false);
-    }
-  }
+    },
+    onError: () => {
+      alert("Failed to create unit");
+      setIsCreating(false);
+    },
+  });
 
-  async function handleUpdate() {
-    if (!editingUnit || !editName || !editSubjectId) return;
-    setIsUpdating(true);
-    try {
+  // Update Unit
+  const updateMutation = useMutation({
+    mutationFn: async ({
+      id,
+      name,
+      subjectId,
+    }: {
+      id: string;
+      name: string;
+      subjectId: string;
+    }) => {
       const res = await fetch("/api/admin/units", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-            id: editingUnit._id, 
-            name: editName, 
-            subjectId: editSubjectId 
-        }),
+        body: JSON.stringify({ id, name, subjectId }),
       });
-      if (res.ok) {
-        const updated = await res.json();
-        setUnits(units.map(u => u._id === updated._id ? updated : u));
-        setEditingUnit(null);
-      } else {
+      if (!res.ok) {
         const err = await res.json();
-        alert(err.message || "Failed to update unit");
+        throw new Error(err.message || "Failed to update unit");
       }
-    } catch (error) {
-       console.error(error);
-       alert("Error updating unit");
-    } finally {
-      setIsUpdating(false);
-    }
-  }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["units"] });
+      setEditingUnit(null);
+    },
+    onError: (error) => {
+      alert(error.message);
+    },
+  });
 
-  async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this unit? This will not delete actual content items but will break the structural link.")) return;
-    
-    try {
+  // Delete Unit
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
       const res = await fetch(`/api/admin/units?id=${id}`, {
         method: "DELETE",
       });
-      if (res.ok) {
-        setUnits(units.filter(u => u._id !== id));
-      } else {
-        alert("Failed to delete unit");
-      }
-    } catch (error) {
-      console.error(error);
-      alert("Error deleting unit");
-    }
+      if (!res.ok) throw new Error("Failed to delete unit");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["units"] });
+    },
+    onError: () => {
+      alert("Failed to delete unit");
+    },
+  });
+
+
+  function handleCreate() {
+    if (!newUnitName || !selectedSubject) return;
+    setIsCreating(true);
+    createMutation.mutate({ name: newUnitName, subjectId: selectedSubject });
+  }
+
+  function handleUpdate() {
+    if (!editingUnit || !editName || !editSubjectId) return;
+    updateMutation.mutate({
+      id: editingUnit._id,
+      name: editName,
+      subjectId: editSubjectId,
+    });
+  }
+
+  function handleDelete(id: string) {
+    if (
+      !confirm(
+        "Are you sure you want to delete this unit? This will not delete actual content items but will break the structural link."
+      )
+    )
+      return;
+    deleteMutation.mutate(id);
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-           <h2 className="text-3xl font-bold tracking-tight">Units</h2>
-           <p className="text-muted-foreground">Manage units within subjects.</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="hidden md:block">
+           <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Units</h2>
+           <p className="text-sm md:text-base text-muted-foreground">Manage units within subjects.</p>
         </div>
         <Sheet>
           <SheetTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" /> Add Unit
             </Button>
           </SheetTrigger>
@@ -275,8 +304,8 @@ export default function UnitsPage() {
                 <SheetClose asChild>
                     <Button variant="outline">Cancel</Button>
                 </SheetClose>
-                <Button onClick={handleCreate} disabled={isCreating || !selectedSubject || !newUnitName}>
-                    {isCreating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                <Button onClick={handleCreate} disabled={createMutation.isPending || !selectedSubject || !newUnitName}>
+                    {createMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Create Unit
                 </Button>
             </SheetFooter>
@@ -337,8 +366,8 @@ export default function UnitsPage() {
             </div>
             <SheetFooter>
                 <Button variant="outline" onClick={() => setEditingUnit(null)}>Cancel</Button>
-                <Button onClick={handleUpdate} disabled={isUpdating || !editSubjectId || !editName}>
-                    {isUpdating ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+                <Button onClick={handleUpdate} disabled={updateMutation.isPending || !editSubjectId || !editName}>
+                    {updateMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                     Update Unit
                 </Button>
             </SheetFooter>
@@ -347,7 +376,7 @@ export default function UnitsPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {isLoading ? (
+        {isLoadingUnits ? (
             <p>Loading...</p>
         ) : units.length === 0 ? (
             <p className="text-muted-foreground col-span-full text-center py-10">No units found.</p>
