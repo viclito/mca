@@ -11,6 +11,10 @@ export async function GET() {
   try {
     await dbConnect();
 
+    // Ensure models are registered for populate (prevent tree-shaking)
+    // We simply reference them here to ensure the bundler includes them
+    const _models = [Unit, Subject, Semester, Degree]; 
+
     // 1. Fetch Active Notifications
     // 1. Fetch Active Notifications
     // Prioritize Main Notification
