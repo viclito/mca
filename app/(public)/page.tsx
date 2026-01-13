@@ -54,6 +54,7 @@ interface Content {
     name: string;
     subjectId: {
       name: string;
+      slug: string;
       semesterId: {
         name: string;
         slug: string;
@@ -211,7 +212,7 @@ export default function Home() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         {recentContent.map((item) => (
-                         <Link key={item._id} href={`/${item.unitId.subjectId.semesterId.degreeId.slug}/${item.unitId.subjectId.semesterId.slug}/${item.unitId.subjectId.name}/read/${item._id}`}>
+                         <Link key={item._id} href={`/${item.unitId.subjectId.semesterId.degreeId.slug}/${item.unitId.subjectId.semesterId.slug}/${item.unitId.subjectId.slug}/read/${item._id}`}>
                             <Card className="h-full hover:shadow-lg hover:border-primary/40 transition-all duration-300 group overflow-hidden border-muted/60 bg-background cursor-pointer">
                                 <div className={cn("h-1.5 w-full", item.type === 'video' ? "bg-blue-500" : "bg-orange-500")} />
                                 <CardHeader className="pb-3 space-y-2">
