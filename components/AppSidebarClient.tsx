@@ -5,7 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
-import { BookOpen, ChevronRight, GraduationCap, Layers } from "lucide-react";
+import { BookOpen, ChevronRight, GraduationCap, Layers, LogOut } from "lucide-react";
+import { User } from "next-auth";
+import { signOut } from "next-auth/react";
 
 interface NavigationData {
   id: string;
@@ -28,10 +30,8 @@ interface NavigationData {
   }[];
 }
 
-export function AppSidebarClient({ courses }: { courses: NavigationData[] }) {
+export function AppSidebarClient({ courses, user }: { courses: NavigationData[]; user?: User }) {
   const pathname = usePathname();
-  // Determine default open items based on pathname? 
-  // For now, let's just let user expand.
   
   // Use the first course as the main one for now
   const mainCourse = courses[0];
@@ -138,9 +138,27 @@ export function AppSidebarClient({ courses }: { courses: NavigationData[] }) {
 
       <div className="p-4 border-t border-border/40">
           <div className="rounded-xl bg-muted/40 p-4 border border-border/50">
-             <h5 className="text-xs font-semibold mb-1">Need Help?</h5>
-             <p className="text-[11px] text-muted-foreground mb-3">Contact support if you find any missing notes.</p>
-             <button className="text-[11px] font-medium text-primary hover:underline">Contact Support</button>
+             {user ? (
+                 <div className="flex flex-col gap-2">
+                     <div className="flex flex-col gap-0.5">
+                        <p className="text-sm font-medium leading-none truncate">{user.name || "Student"}</p>
+                        <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
+                     </div>
+                     <button 
+                        onClick={() => signOut()} 
+                        className="flex items-center gap-2 text-[11px] font-medium text-red-500 hover:text-red-600 hover:underline"
+                     >
+                        <LogOut className="h-3 w-3" />
+                        Sign Out
+                     </button>
+                 </div>
+             ) : (
+                <>
+                 <h5 className="text-xs font-semibold mb-1">Need Help?</h5>
+                 <p className="text-[11px] text-muted-foreground mb-3">Contact support if you find any missing notes.</p>
+                 <button className="text-[11px] font-medium text-primary hover:underline">Contact Support</button>
+                </>
+             )}
           </div>
       </div>
     </div>

@@ -29,7 +29,6 @@ const sidebarItems = [
   { label: "Semesters", href: "/admin/semesters", icon: LibraryBig },
   { label: "Subjects", href: "/admin/subjects", icon: BookOpen },
   { label: "Units", href: "/admin/units", icon: Layers },
-  { label: "Units", href: "/admin/units", icon: Layers },
   { label: "Content", href: "/admin/content", icon: FileVideo },
   { label: "Notifications", href: "/admin/notifications", icon: Megaphone },
 ];
@@ -42,7 +41,10 @@ function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
     <>
       <div className="flex-1 overflow-y-auto py-6 px-3 space-y-1">
         {sidebarItems.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          // For dashboard, use exact match to prevent it from being active on all /admin/* routes
+          const isActive = item.href === "/admin" 
+            ? pathname === "/admin"
+            : pathname === item.href || pathname.startsWith(`${item.href}/`);
           return (
             <Link key={item.href} href={item.href} onClick={onLinkClick}>
               <div
@@ -83,7 +85,11 @@ function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
   );
 }
 
-export function AdminSidebar({ mobileTitle }: { mobileTitle?: string }) {
+import { User } from "next-auth";
+
+// ... existing imports
+
+export function AdminSidebar({ mobileTitle, user }: { mobileTitle?: string; user?: User }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -102,19 +108,45 @@ export function AdminSidebar({ mobileTitle }: { mobileTitle?: string }) {
               <div className="h-14 flex items-center justify-between px-6 border-b border-border/40">
                 <h2 className="text-lg font-bold tracking-tight">Admin Panel</h2>
               </div>
+              <div className="px-6 py-4 border-b border-border/40 bg-muted/20">
+                 {user ? (
+                   <div className="flex flex-col gap-1">
+                      <p className="text-sm font-medium leading-none truncate">{user.name || "Admin"}</p>
+                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                   </div>
+                 ) : (
+                   <p className="text-sm font-medium">Guest</p>
+                 )}
+              </div>
               <SidebarContent onLinkClick={() => setOpen(false)} />
             </div>
           </SheetContent>
         </Sheet>
-        {mobileTitle && (
-          <h1 className="text-lg font-semibold truncate">{mobileTitle}</h1>
-        )}
+        <div className="flex-1 min-w-0">
+            {mobileTitle && (
+            <h1 className="text-lg font-semibold truncate">{mobileTitle}</h1>
+            )}
+        </div>
+        {/* Mobile profile icon could go here if needed, but sidebar is enough */}
       </div>
 
       {/* Desktop Sidebar */}
       <aside className="hidden md:flex flex-col w-64 border-r border-border/40 bg-card h-screen sticky top-0">
         <div className="h-16 flex items-center px-6 border-b border-border/40">
           <h2 className="text-xl font-bold tracking-tight">Admin Panel</h2>
+        </div>
+        <div className="px-6 py-4 border-b border-border/40 bg-muted/20">
+             {user ? (
+               <div className="flex flex-col gap-1">
+                  <p className="text-sm font-medium leading-none truncate">{user.name || "Admin"}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  <span className="inline-flex mt-1 items-center rounded-full border border-transparent bg-primary/10 px-2 py-0.5 text-xs font-semibold text-primary transition-colors hover:bg-primary/20 w-fit">
+                    {user.role || 'Admin'}
+                  </span>
+               </div>
+             ) : (
+               <p className="text-sm font-medium">Guest</p>
+             )}
         </div>
         <SidebarContent />
       </aside>
