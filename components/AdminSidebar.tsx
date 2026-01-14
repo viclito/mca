@@ -15,7 +15,8 @@ import {
   Settings,
   Menu,
   X,
-  Megaphone
+  Megaphone,
+  Info
 } from "lucide-react";
 
 
@@ -71,6 +72,12 @@ function SidebarContent({ onLinkClick }: { onLinkClick?: () => void }) {
           <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer">
             <Settings className="h-4 w-4" />
             Settings
+          </div>
+        </Link>
+        <Link href="/about" onClick={onLinkClick}>
+          <div className="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer">
+            <Info className="h-4 w-4" />
+            About
           </div>
         </Link>
         <div
