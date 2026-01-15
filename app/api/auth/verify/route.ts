@@ -37,9 +37,13 @@ export async function GET(req: Request) {
 
     await user.save();
 
-    // Redirect to login page with a success message
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
-    return NextResponse.redirect(`${baseUrl}/login?verified=true`);
+    // Redirect to the appropriate login page with a success message
+    // Use the request URL to determine the base URL if NEXT_PUBLIC_APP_URL is not set
+    const requestUrl = new URL(req.url);
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || `${requestUrl.protocol}//${requestUrl.host}`;
+    const redirectPath = user.role === "student" ? "/student/login" : "/login";
+    
+    return NextResponse.redirect(`${baseUrl}${redirectPath}?verified=true`);
   } catch (error) {
     console.error("Verification Error:", error);
     return NextResponse.json(
