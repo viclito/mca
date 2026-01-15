@@ -39,6 +39,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 return null;
             }
 
+            if (user.role === "student" && !user.isEmailVerified) {
+                console.log("Student email not verified");
+                throw new Error("Please verify your email before logging in.");
+            }
+
             if (!user.isApproved) {
                 console.log("User not approved");
                 throw new Error("Account not approved yet.");

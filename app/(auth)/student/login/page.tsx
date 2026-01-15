@@ -1,10 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Loader2, GraduationCap } from "lucide-react";
+import { Loader2, GraduationCap, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -18,15 +18,24 @@ import {
 
 export default function StudentLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("verified") === "true") {
+      setSuccess("Email verified successfully! You can now log in.");
+    }
+  }, [searchParams]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setIsLoading(true);
     setError("");
+    setSuccess("");
 
     try {
       const result = await signIn("credentials", {
@@ -43,7 +52,8 @@ export default function StudentLoginPage() {
         } else if (result.error === "CredentialsSignin") {
             setError("Invalid email or password.");
         } else {
-             setError("Authentication failed.");
+             // Try to use the error message from the backend if available
+             setError(result.error || "Authentication failed.");
         }
       } else {
         router.push("/"); // Redirect student to homepage
@@ -90,6 +100,12 @@ export default function StudentLoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
+            {success && (
+              <div className="bg-green-500/10 border border-green-500/20 text-green-600 p-3 rounded-md flex items-center gap-2 text-sm justify-center mb-4">
+                <CheckCircle2 className="h-4 w-4" />
+                {success}
+              </div>
+            )}
             {error && <p className="text-sm text-red-500 text-center">{error}</p>}
             <div className="flex justify-end">
               <Link href="/forgot-password" className="text-sm text-primary hover:underline">

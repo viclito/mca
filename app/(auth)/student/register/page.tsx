@@ -40,14 +40,14 @@ export default function StudentRegisterPage() {
       }
       return responseData;
     },
-    onSuccess: () => {
-      setSuccess("Account created successfully! Redirecting to login...");
+    onSuccess: (data: any) => {
+      setSuccess(data.message || "Registration successful! Please check your email to verify your account.");
       setEmail("");
       setPassword("");
       setConfirmPassword("");
       setTimeout(() => {
         router.push("/student/login");
-      }, 2000);
+      }, 5000);
     },
     onError: (err: Error) => {
       setError(err.message || "An unexpected error occurred.");
