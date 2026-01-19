@@ -16,7 +16,8 @@ import {
   Menu,
   X,
   Megaphone,
-  Info
+  Info,
+  FileText
 } from "lucide-react";
 
 
@@ -31,6 +32,7 @@ const sidebarItems = [
   { label: "Subjects", href: "/admin/subjects", icon: BookOpen },
   { label: "Units", href: "/admin/units", icon: Layers },
   { label: "Content", href: "/admin/content", icon: FileVideo },
+  { label: "Forms", href: "/admin/forms", icon: FileText },
   { label: "Notifications", href: "/admin/notifications", icon: Megaphone },
 ];
 

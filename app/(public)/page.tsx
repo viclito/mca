@@ -93,6 +93,17 @@ export default function Home() {
   const mainNotification = notifications.find((n) => n.isMain);
   const otherNotifications = notifications.filter((n) => !n.isMain);
 
+  // Helper to convert Google Drive links to direct images (Thumbnail method is more reliable for embedding)
+  const getDirectImageUrl = (url: string) => {
+    if (!url) return "";
+    if (url.includes("drive.google.com") && url.includes("/d/")) {
+        const id = url.split("/d/")[1].split("/")[0];
+        // sz=w2000 asks for a width of up to 2000px, getting a high-res version
+        return `https://drive.google.com/thumbnail?id=${id}&sz=w2000`; 
+    }
+    return url;
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-[#F5F5F7] pb-20">
       <div className="bg-white/70 backdrop-blur-xl border-b border-white/20 fixed top-0 w-full z-50 transition-all duration-200">
@@ -105,6 +116,9 @@ export default function Home() {
             </div>
             {session?.user ? (
                  <div className="flex items-center gap-4">
+                    <Link href="/student/forms" className="text-xs font-medium text-gray-500 hover:text-black transition-colors">
+                        Forms
+                    </Link>
                     <span className="text-sm font-medium text-gray-600 hidden sm:inline-block">
                         Hi, {session.user.name?.split(' ')[0] || "Student"}
                     </span>
@@ -139,12 +153,17 @@ export default function Home() {
         {/* Main Notification Banner - Full Width */}
         {mainNotification && (
              <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                <Card className="rounded-[2rem] overflow-hidden border-0 shadow-2xl bg-black text-white relative min-h-[100px] flex items-center justify-center group cursor-default">
-                    {/* Abstract Apple-style mesh gradient */}
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_#3e3e3e,_#000000)] opacity-80" />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[100px] group-hover:bg-blue-600/30 transition-all duration-700" />
+                <Card className="rounded-[2rem] overflow-hidden border-0 shadow-2xl bg-black text-white relative min-h-[100px] flex items-center justify-center group cursor-pointer transition-all hover:scale-[1.01]">
+                    <Sheet>
+                    <SheetTrigger asChild>
+                    <div className="w-full h-full absolute inset-0 z-20" />
+                    </SheetTrigger>
                     
-                    <CardContent className="relative z-10 flex flex-col items-center text-center space-y-6 max-w-2xl mx-auto p-8">
+                    {/* Abstract Apple-style mesh gradient */}
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_#3e3e3e,_#000000)] opacity-80 pointer-events-none" />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[100px] group-hover:bg-blue-600/30 transition-all duration-700 pointer-events-none" />
+                    
+                    <CardContent className="relative z-10 flex flex-col items-center text-center space-y-6 max-w-2xl mx-auto p-8 pointer-events-none">
                          <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10">
                             <span className="text-xs font-medium tracking-wide uppercase text-white/80">Update</span>
                          </div>
@@ -153,62 +172,60 @@ export default function Home() {
                             {mainNotification.message}
                         </p>
                         
-                        <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-                            {mainNotification.timetable && mainNotification.timetable.length > 0 && (
-                                <Sheet>
-                                    <SheetTrigger asChild>
-                                        <Button size="lg" className="rounded-full bg-white text-black hover:bg-white/90 px-8 text-base h-12">
-                                            View Schedule
-                                        </Button>
-                                    </SheetTrigger>
-                                    <SheetContent>
-                                        <SheetHeader>
-                                            <SheetTitle>{mainNotification.type === 'general' ? 'Details' : 'Event'}</SheetTitle>
-                                            <SheetDescription>
-                                                 {mainNotification.title}
-                                            </SheetDescription>
-                                        </SheetHeader>
-                                        <div className="mt-6 space-y-6">
-                                            {mainNotification.image && (
-                                                <div className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                                                    <img 
-                                                        src={mainNotification.image} 
-                                                        alt={mainNotification.title} 
-                                                        className="w-full h-auto object-cover" 
-                                                    />
-                                                </div>
-                                            )}
-                                            {mainNotification.timetable && mainNotification.timetable.length > 0 && (
-                                            <Table>
-                                                <TableHeader>
-                                                    <TableRow>
-                                                        <TableHead>Date</TableHead>
-                                                        <TableHead>Subject</TableHead>
-                                                        <TableHead>Time</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {mainNotification.timetable.map((row, i) => (
-                                                        <TableRow key={i}>
-                                                            <TableCell className="font-medium">{row.date}</TableCell>
-                                                            <TableCell>{row.subject}</TableCell>
-                                                            <TableCell>{row.time}</TableCell>
-                                                        </TableRow>
-                                                    ))}
-                                                </TableBody>
-                                            </Table>
-                                            )}
-                                        </div>
-                                    </SheetContent>
-                                </Sheet>
-                            )}
+                        <div className="flex flex-wrap items-center justify-center gap-4 pt-4 pointer-events-auto">
+                            <Button size="lg" className="rounded-full bg-white text-black hover:bg-white/90 px-8 text-base h-12 pointer-events-none">
+                                {mainNotification.timetable && mainNotification.timetable.length > 0 ? 'View Schedule' : 'View Details'}
+                            </Button>
                             {mainNotification.link && (
-                                <a href={mainNotification.link} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline hover:text-blue-300 flex items-center gap-1">
+                                <a href={mainNotification.link} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline hover:text-blue-300 flex items-center gap-1 relative z-30" onClick={(e) => e.stopPropagation()}>
                                     Learn more <ExternalLink className="h-4 w-4" />
                                 </a>
                             )}
                         </div>
                     </CardContent>
+                        <SheetContent>
+                            <SheetHeader>
+                                <SheetTitle>{mainNotification.type === 'general' ? 'Details' : 'Event'}</SheetTitle>
+                                <SheetDescription>
+                                        {mainNotification.title}
+                                </SheetDescription>
+                            </SheetHeader>
+                            <div className="mt-6 space-y-6">
+                                        {mainNotification.image && (
+                                            <div className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+                                                <img 
+                                                    src={getDirectImageUrl(mainNotification.image)} 
+                                                    alt={mainNotification.title} 
+                                                    className="w-full h-auto object-cover" 
+                                                />
+                                            </div>
+                                        )}
+                                <div className="text-sm text-gray-600 leading-relaxed">
+                                    {mainNotification.message}
+                                </div>
+                                {mainNotification.timetable && mainNotification.timetable.length > 0 && (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Date</TableHead>
+                                            <TableHead>Subject</TableHead>
+                                            <TableHead>Time</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {mainNotification.timetable.map((row, i) => (
+                                            <TableRow key={i}>
+                                                <TableCell className="font-medium">{row.date}</TableCell>
+                                                <TableCell>{row.subject}</TableCell>
+                                                <TableCell>{row.time}</TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                                )}
+                            </div>
+                        </SheetContent>
+                    </Sheet>
                 </Card>
              </div>
         )}
@@ -286,7 +303,9 @@ export default function Home() {
                     ) : (
                         <div className="space-y-6">
                             {otherNotifications.map((note, idx) => (
-                                <div key={note._id} className={cn("group", idx !== otherNotifications.length - 1 && "border-b border-gray-100 pb-6")}>
+                                <Sheet key={note._id}>
+                                    <SheetTrigger asChild>
+                                <div className={cn("group cursor-pointer hover:bg-gray-50/50 transition-colors p-3 -mx-3 rounded-xl", idx !== otherNotifications.length - 1 && "border-b border-gray-100 pb-6 mb-2")}>
                                      <div className="flex items-start justify-between gap-4">
                                         <div className="space-y-1.5">
                                             <div className="flex items-center gap-2">
@@ -301,7 +320,7 @@ export default function Home() {
                                                     {new Date(note.createdAt).toLocaleDateString()}
                                                 </span>
                                             </div>
-                                            <h3 className="text-base font-semibold text-black leading-snug group-hover:text-blue-600 transition-colors cursor-default">
+                                            <h3 className="text-base font-semibold text-black leading-snug group-hover:text-blue-600 transition-colors">
                                                 {note.title}
                                             </h3>
                                             <p className="text-sm text-gray-500 leading-relaxed line-clamp-3">
@@ -311,59 +330,58 @@ export default function Home() {
                                      </div>
                                     
                                     <div className="flex items-center gap-3 mt-3">
-                                        {((note.timetable && note.timetable.length > 0) || note.image) && (
-                                            <Sheet>
-                                                <SheetTrigger asChild>
-                                                    <button className="text-xs font-medium text-blue-600 hover:underline flex items-center gap-1">
-                                                        {note.type === 'exam' || (note.timetable && note.timetable.length > 0) ? 'Exam Schedule' : 'View Details'}
-                                                    </button>
-                                                </SheetTrigger>
-                                                <SheetContent>
-                                                    <SheetHeader>
-                                                        <SheetTitle>{note.title}</SheetTitle>
-                                                        <SheetDescription>{note.message}</SheetDescription>
-                                                    </SheetHeader>
-                                                    <div className="mt-6 space-y-6">
-                                                        {note.image && (
-                                                            <div className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                                                                <img 
-                                                                    src={note.image} 
-                                                                    alt={note.title} 
-                                                                    className="w-full h-auto object-cover" 
-                                                                />
-                                                            </div>
-                                                        )}
-                                                        {note.timetable && note.timetable.length > 0 && (
-                                                            <Table>
-                                                            <TableHeader>
-                                                                <TableRow>
-                                                                    <TableHead>Date</TableHead>
-                                                                    <TableHead>Subject</TableHead>
-                                                                    <TableHead>Time</TableHead>
-                                                                </TableRow>
-                                                            </TableHeader>
-                                                            <TableBody>
-                                                                {note.timetable.map((row, i) => (
-                                                                    <TableRow key={i}>
-                                                                        <TableCell className="font-medium">{row.date}</TableCell>
-                                                                        <TableCell>{row.subject}</TableCell>
-                                                                        <TableCell>{row.time}</TableCell>
-                                                                    </TableRow>
-                                                                ))}
-                                                            </TableBody>
-                                                        </Table>
-                                                        )}
-                                                    </div>
-                                                </SheetContent>
-                                            </Sheet>
-                                        )}
+                                                <button className="text-xs font-medium text-blue-600 hover:underline flex items-center gap-1 pointer-events-none">
+                                                    {note.type === 'exam' || (note.timetable && note.timetable.length > 0) ? 'Exam Schedule' : 'View Details'}
+                                                </button>
                                         {note.link && (
-                                            <a href={note.link} target="_blank" rel="noreferrer" className="text-xs font-medium text-blue-600 hover:underline flex items-center gap-1">
+                                            <a href={note.link} target="_blank" rel="noreferrer" className="text-xs font-medium text-blue-600 hover:underline flex items-center gap-1 relative z-30" onClick={(e) => e.stopPropagation()}>
                                                 View Link <ExternalLink className="h-3 w-3" />
                                             </a>
                                         )}
                                     </div>
                                 </div>
+                                    </SheetTrigger>
+                                    <SheetContent>
+                                        <SheetHeader>
+                                            <SheetTitle>{note.title}</SheetTitle>
+                                            <SheetDescription>{note.message}</SheetDescription>
+                                        </SheetHeader>
+                                        <div className="mt-6 space-y-6">
+                                            {note.image && (
+                                                <div className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+                                                    <img 
+                                                        src={getDirectImageUrl(note.image)} 
+                                                        alt={note.title} 
+                                                        className="w-full h-auto object-cover" 
+                                                    />
+                                                </div>
+                                            )}
+                                            <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                                                {note.message}
+                                            </div>
+                                            {note.timetable && note.timetable.length > 0 && (
+                                                <Table>
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Date</TableHead>
+                                                        <TableHead>Subject</TableHead>
+                                                        <TableHead>Time</TableHead>
+                                                    </TableRow>
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {note.timetable.map((row, i) => (
+                                                        <TableRow key={i}>
+                                                            <TableCell className="font-medium">{row.date}</TableCell>
+                                                            <TableCell>{row.subject}</TableCell>
+                                                            <TableCell>{row.time}</TableCell>
+                                                        </TableRow>
+                                                    ))}
+                                                </TableBody>
+                                            </Table>
+                                            )}
+                                        </div>
+                                    </SheetContent>
+                                </Sheet>
                             ))}
                         </div>
                     )}

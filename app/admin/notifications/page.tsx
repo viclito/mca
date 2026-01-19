@@ -63,6 +63,7 @@ export default function NotificationsPage() {
   const [type, setType] = useState<"exam" | "fees" | "general" | "seminar" | "viva">("general");
   const [link, setLink] = useState("");
   const [image, setImage] = useState("");
+  const [uploading, setUploading] = useState(false); // New state for upload status
   const [isActive, setIsActive] = useState(true);
   const [isMain, setIsMain] = useState(false);
   const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
@@ -133,6 +134,33 @@ export default function NotificationsPage() {
     },
     onError: () => alert("Failed to delete notification"),
   });
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files?.[0]) return;
+    
+    setUploading(true);
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        const res = await fetch("/api/upload", {
+            method: "POST",
+            body: formData,
+        });
+        const data = await res.json();
+        if (data.success) {
+            setImage(data.url);
+        } else {
+            alert("Upload failed");
+        }
+    } catch (err) {
+        console.error("Error uploading file:", err);
+        alert("Error uploading file");
+    } finally {
+        setUploading(false);
+    }
+  };
 
   function resetForm() {
     setTitle("");
@@ -345,10 +373,31 @@ export default function NotificationsPage() {
                 <Input value={link} onChange={(e: any) => setLink(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Image URL (Optional)</Label>
-                <Input value={image} onChange={(e: any) => setImage(e.target.value)} />
+              <Label>Image</Label>
+               {image && (
+                   <div className="mb-2 relative w-full h-40 bg-gray-100 rounded-md overflow-hidden border">
+                       <img src={image} alt="Preview" className="w-full h-full object-cover" />
+                       <Button 
+                            variant="destructive" 
+                            size="icon" 
+                            className="absolute top-2 right-2 h-6 w-6"
+                            onClick={() => setImage("")}
+                        >
+                            <Trash className="h-3 w-3" />
+                        </Button>
+                   </div>
+               )}
+              <div className="flex gap-2 items-center">
+                  <Input 
+                        type="file" 
+                        accept="image/*"
+                        onChange={handleFileUpload} 
+                        disabled={uploading}
+                  />
+                  {uploading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
               </div>
-              <div className="flex items-center space-x-2 pt-2">
+              <p className="text-xs text-muted-foreground">Upload an image (JPG, PNG)</p>
+            </div> <div className="flex items-center space-x-2 pt-2">
                   <Switch checked={isActive} onCheckedChange={setIsActive} id="active-mode" />
                   <Label htmlFor="active-mode">Active Status</Label>
               </div>
