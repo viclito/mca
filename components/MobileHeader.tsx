@@ -1,6 +1,7 @@
 "use client";
 
-import { Menu } from "lucide-react";
+import { Menu, LogIn } from "lucide-react";
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet";
 import { AppSidebarClient } from "@/components/AppSidebarClient";
@@ -29,10 +30,16 @@ export function MobileHeader({ courses, user }: MobileHeaderProps) {
           </Sheet>
           <div className="font-semibold">MCA Study Hub</div>
       </div>
-      {user && (
+      {user ? (
           <div className="text-sm font-medium text-muted-foreground truncate max-w-[120px]">
               {user.name || "Student"}
           </div>
+      ) : (
+          <Link href="/login">
+            <Button size="sm" variant="default" className="h-8 rounded-full px-4 text-xs">
+               Sign In
+            </Button>
+          </Link>
       )}
     </header>
   );
