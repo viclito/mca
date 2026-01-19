@@ -53,6 +53,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             // Return safe object
             return { 
                 id: user._id.toString(),
+                name: user.name,
                 email: user.email,
                 role: user.role,
                 isApproved: user.isApproved

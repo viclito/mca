@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
-import { BookOpen, ChevronRight, GraduationCap, Info, Layers, LogOut } from "lucide-react";
+import { BookOpen, ChevronRight, GraduationCap, Info, Layers, LogOut, FileText } from "lucide-react";
 import { User } from "next-auth";
 import { signOut } from "next-auth/react";
 
@@ -63,6 +63,22 @@ export function AppSidebarClient({ courses, user }: { courses: NavigationData[];
                )}>
                   <BookOpen className="h-4 w-4 opacity-70" />
                   {mainCourse.name}
+               </div>
+             </Link>
+         </div>
+         
+         {/* Tools Group */}
+          <div className="space-y-1">
+             <h4 className="px-3 text-xs font-medium text-muted-foreground/70 uppercase tracking-widest mb-2">Tools</h4>
+             <Link href="/student/forms">
+               <div className={cn(
+                   "flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-200",
+                   pathname.startsWith("/student/forms")
+                     ? "bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm" 
+                     : "text-foreground/80 hover:bg-muted/60 hover:text-foreground"
+               )}>
+                  <FileText className="h-4 w-4 opacity-70" />
+                  Forms & Surveys
                </div>
              </Link>
          </div>

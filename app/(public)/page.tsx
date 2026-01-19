@@ -1,5 +1,7 @@
 "use client";
 
+import { useState, useEffect } from "react";
+
 import Link from "next/link";
 import { USERS_COURSE } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -8,8 +10,12 @@ import { BookOpen, GraduationCap, ArrowRight, Library, MonitorPlay, Bell, FileTe
 import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
     Sheet,
     SheetContent,
@@ -77,7 +83,7 @@ interface HomeData {
 }
 
 export default function Home() {
-  const { data: session } = useSession();
+  const { data: session, update } = useSession();
   const { data, isLoading } = useQuery<HomeData>({
     queryKey: ["homeData"],
     queryFn: async () => {
@@ -104,9 +110,94 @@ export default function Home() {
     return url;
   };
 
+  // Check for missing name
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [updatingName, setUpdatingName] = useState(false);
+
+  useEffect(() => {
+    const checkName = async () => {
+        if (session?.user && (!session.user.name || session.user.name === "Student")) {
+            // Session says no name. Let's double check with the DB just in case session is stale.
+            try {
+                const res = await fetch("/api/user/profile");
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.user?.name && data.user.name !== "Student") {
+                        // DB has name! Session is stale. Update it.
+                        await update({ name: data.user.name });
+                        return; // Don't show modal
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to verify name", e);
+            }
+            // If we get here, name is really missing.
+            setShowNameModal(true);
+        }
+    };
+    
+    if (session?.user) {
+        checkName();
+    }
+  }, [session, update]);
+
+  const handleNameUpdate = async () => {
+    if (!newName.trim()) return;
+    setUpdatingName(true);
+    try {
+        const res = await fetch("/api/user/profile", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: newName })
+        });
+        
+        if (res.ok) {
+            await update({ name: newName });
+            setShowNameModal(false);
+        } else {
+            alert("Failed to update name");
+        }
+    } catch (error) {
+        console.error("Error:", error);
+    } finally {
+        setUpdatingName(false);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-[#F5F5F7] pb-20">
-      <div className="bg-white/70 backdrop-blur-xl border-b border-white/20 fixed top-0 w-full z-50 transition-all duration-200">
+      <Dialog open={showNameModal} onOpenChange={setShowNameModal}>
+        <DialogContent className="sm:max-w-[425px]" onInteractOutside={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Complete Your Profile</DialogTitle>
+            <DialogDescription>
+              Please enter your full name to continue. This looks better on your certificates and dashboard.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="name"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                className="col-span-3"
+                placeholder="John Doe"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={handleNameUpdate} disabled={updatingName || !newName.trim()}>
+              {updatingName ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <div className="hidden md:block bg-white/70 backdrop-blur-xl border-b border-white/20 fixed top-0 w-full z-50 transition-all duration-200">
         <div className="max-w-[980px] mx-auto flex items-center justify-between h-12 px-6">
              <div className="flex items-center gap-2">
                 <GraduationCap className="h-5 w-5 text-black" />
@@ -148,7 +239,16 @@ export default function Home() {
          </div>
       </div> */}
 
-      <div className="flex-1 w-full max-w-7xl mx-auto pt-28 px-6 py-8 space-y-8">
+      {/* Hero Area */}
+      {/* <div className="pt-28 pb-12 px-6">
+         <div className="max-w-[980px] mx-auto text-center space-y-4">
+            <h1 className="text-5xl md:text-7xl font-semibold tracking-tight text-black">
+                Student Dashboard
+            </h1>
+         </div>
+      </div> */}
+
+      <div className="flex-1 w-full max-w-7xl mx-auto pt-6 md:pt-28 px-6 py-8 space-y-8">
         
         {/* Main Notification Banner - Full Width */}
         {mainNotification && (
