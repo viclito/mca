@@ -7,11 +7,11 @@ import { transporter } from "@/lib/mail";
 
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const { name, email, password } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json(
-        { message: "Missing email or password" },
+        { message: "Missing name, email or password" },
         { status: 400 }
       );
     }
@@ -35,6 +35,7 @@ export async function POST(req: Request) {
 
     // Create user with 'student' role, unverified, and not approved
     const newUser = await User.create({
+      name,
       email,
       password: hashedPassword,
       role: "student",

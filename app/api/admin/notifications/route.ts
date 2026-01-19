@@ -18,7 +18,7 @@ export async function POST(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
-    const { title, message, type, link, isMain, timetable } = body;
+    const { title, message, type, link, image, isMain, timetable } = body;
 
     if (!title || !message) {
       return new NextResponse("Title and Message are required", { status: 400 });
@@ -34,6 +34,7 @@ export async function POST(req: Request) {
       message,
       type,
       link,
+      image,
       isMain: isMain || false,
       timetable: timetable || [],
     });
@@ -53,7 +54,7 @@ export async function PUT(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
-    const { id, title, message, type, link, active, isMain, timetable } = body;
+    const { id, title, message, type, link, image, active, isMain, timetable } = body;
 
     if (!id) {
       return new NextResponse("ID is required", { status: 400 });
@@ -66,7 +67,7 @@ export async function PUT(req: Request) {
 
     const notification = await Notification.findByIdAndUpdate(
       id,
-      { title, message, type, link, active, isMain, timetable },
+      { title, message, type, link, image, active, isMain, timetable },
       { new: true }
     );
 

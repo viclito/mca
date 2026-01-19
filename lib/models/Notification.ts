@@ -29,6 +29,9 @@ const NotificationSchema = new Schema(
     link: {
       type: String, // Optional URL for PDF or external link
     },
+    image: {
+      type: String, // Optional URL for Image
+    },
     active: {
       type: Boolean,
       default: true,

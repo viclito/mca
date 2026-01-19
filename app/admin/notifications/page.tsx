@@ -46,6 +46,7 @@ interface Notification {
   message: string;
   type: "exam" | "fees" | "general" | "seminar" | "viva";
   link?: string;
+  image?: string;
   active: boolean;
   isMain: boolean;
   timetable?: TimetableEntry[];
@@ -61,6 +62,7 @@ export default function NotificationsPage() {
   const [message, setMessage] = useState("");
   const [type, setType] = useState<"exam" | "fees" | "general" | "seminar" | "viva">("general");
   const [link, setLink] = useState("");
+  const [image, setImage] = useState("");
   const [isActive, setIsActive] = useState(true);
   const [isMain, setIsMain] = useState(false);
   const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
@@ -137,6 +139,7 @@ export default function NotificationsPage() {
     setMessage("");
     setType("general");
     setLink("");
+    setImage("");
     setIsActive(true);
     setIsMain(false);
     setTimetable([]);
@@ -145,7 +148,7 @@ export default function NotificationsPage() {
   function handleCreate() {
     if (!title || !message) return;
     setIsCreating(true);
-    createMutation.mutate({ title, message, type, link, isMain, timetable });
+    createMutation.mutate({ title, message, type, link, image, isMain, timetable });
   }
 
   function handleUpdate() {
@@ -156,6 +159,7 @@ export default function NotificationsPage() {
       message,
       type,
       link,
+      image,
       active: isActive,
       isMain,
       timetable,
@@ -174,6 +178,7 @@ export default function NotificationsPage() {
     setMessage(n.message);
     setType(n.type);
     setLink(n.link || "");
+    setImage(n.image || "");
     setIsActive(n.active ?? true);
     setIsMain(n.isMain || false);
     setTimetable(n.timetable || []);
@@ -282,6 +287,10 @@ export default function NotificationsPage() {
                 <Label>Link (Optional)</Label>
                 <Input value={link} onChange={(e: any) => setLink(e.target.value)} placeholder="https://..." />
               </div>
+              <div className="space-y-2">
+                <Label>Image URL (Optional)</Label>
+                <Input value={image} onChange={(e: any) => setImage(e.target.value)} placeholder="https://... (Image Link)" />
+              </div>
                <div className="flex items-center space-x-2 pt-2">
                   <Switch checked={isMain} onCheckedChange={setIsMain} id="main-mode" />
                   <Label htmlFor="main-mode">Set as Main Notification</Label>
@@ -334,6 +343,10 @@ export default function NotificationsPage() {
               <div className="space-y-2">
                 <Label>Link (Optional)</Label>
                 <Input value={link} onChange={(e: any) => setLink(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Image URL (Optional)</Label>
+                <Input value={image} onChange={(e: any) => setImage(e.target.value)} />
               </div>
               <div className="flex items-center space-x-2 pt-2">
                   <Switch checked={isActive} onCheckedChange={setIsActive} id="active-mode" />

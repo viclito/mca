@@ -10,7 +10,15 @@ interface GoogleDriveViewerProps {
 export function GoogleDriveViewer({ url, type, title }: GoogleDriveViewerProps) {
   const getEmbedUrl = (url: string) => {
     try {
-       // Extract ID
+      // 1. YouTube Strings
+      const youtubeRegex = /^(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/;
+      const youtubeMatch = url.match(youtubeRegex);
+
+      if (youtubeMatch && youtubeMatch[1]) {
+          return `https://www.youtube.com/embed/${youtubeMatch[1]}`;
+      }
+
+       // 2. Google Drive Strings
        // Pattern 1: https://drive.google.com/file/d/VIDEO_ID/view?usp=sharing
        // Pattern 2: https://drive.google.com/open?id=VIDEO_ID
        let id = "";
@@ -24,9 +32,11 @@ export function GoogleDriveViewer({ url, type, title }: GoogleDriveViewerProps) 
            id = urlObj.searchParams.get("id") || "";
        }
 
-       if (!id) return url; // Fallback
+       if (id) {
+         return `https://drive.google.com/file/d/${id}/preview`;
+       }
 
-       return `https://drive.google.com/file/d/${id}/preview`;
+       return url; // Fallback
     } catch (e) {
         return url;
     }

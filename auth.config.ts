@@ -11,7 +11,10 @@ export const authConfig = {
       const isAdminPage = nextUrl.pathname.startsWith("/admin");
       
       if (isAdminPage) {
-        if (isLoggedIn) return true;
+        if (isLoggedIn) {
+             const user = auth.user as any;
+             return user.role === 'admin' || user.role === 'super_admin';
+        }
         return false; // Redirect unauthenticated users to login page
       }
       return true;

@@ -293,7 +293,7 @@ export default function ContentPage() {
       <div className="flex items-center justify-between">
         <div>
            <h2 className="text-3xl font-bold tracking-tight">Content</h2>
-           <p className="text-muted-foreground">Manage videos and PDFs (Google Drive Links).</p>
+           <p className="text-muted-foreground">Manage videos (Google Drive / YouTube) and PDFs.</p>
         </div>
         <Sheet>
           <SheetTrigger asChild>
@@ -364,8 +364,8 @@ export default function ContentPage() {
                       </Select>
                    </div>
                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Google Drive URL</label>
-                      <Input placeholder="https://drive.google.com/..." value={url} onChange={(e) => setUrl(e.target.value)} />
+                      <label className="text-sm font-medium">Video URL (Google Drive / YouTube)</label>
+                      <Input placeholder="https://drive.google.com/... or https://youtube.com/..." value={url} onChange={(e) => setUrl(e.target.value)} />
                    </div>
                </div>
             </div>
@@ -446,8 +446,8 @@ export default function ContentPage() {
                       </Select>
                    </div>
                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Google Drive URL</label>
-                      <Input placeholder="https://drive.google.com/..." value={editUrl} onChange={(e) => setEditUrl(e.target.value)} />
+                      <label className="text-sm font-medium">Video URL (Google Drive / YouTube)</label>
+                      <Input placeholder="https://drive.google.com/... or https://youtube.com/..." value={editUrl} onChange={(e) => setEditUrl(e.target.value)} />
                    </div>
                </div>
             </div>
