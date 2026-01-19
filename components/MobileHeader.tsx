@@ -35,7 +35,7 @@ export function MobileHeader({ courses, user }: MobileHeaderProps) {
               {user.name || "Student"}
           </div>
       ) : (
-          <Link href="/login">
+          <Link href="/student/login">
             <Button size="sm" variant="default" className="h-8 rounded-full px-4 text-xs">
                Sign In
             </Button>
