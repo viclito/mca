@@ -15,7 +15,15 @@ export async function POST(req: Request) {
       );
     }
 
-    await dbConnect();
+    try {
+      await dbConnect();
+    } catch (dbError) {
+      console.error("Database connection error:", dbError);
+      return NextResponse.json(
+        { message: "If an account exists with this email, you will receive a password reset link." },
+        { status: 200 }
+      );
+    }
 
     const user = await User.findOne({ email });
 
@@ -31,10 +39,15 @@ export async function POST(req: Request) {
     const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 hour from now
 
-    // Save token to user
-    user.resetToken = resetToken;
-    user.resetTokenExpiry = resetTokenExpiry;
-    await user.save();
+    // Update user with reset token (using findByIdAndUpdate to avoid validation errors)
+    await User.findByIdAndUpdate(
+      user._id,
+      {
+        resetToken,
+        resetTokenExpiry,
+      },
+      { runValidators: false } // Skip validation to prevent "name required" errors on existing users
+    );
 
     // Create reset link
     const resetLink = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/reset-password?token=${resetToken}`;
@@ -60,17 +73,31 @@ export async function POST(req: Request) {
       </div>
     `;
 
-    await sendEmail(email, "Password Reset Request", htmlContent);
+    try {
+      await sendEmail(email, "Password Reset Request", htmlContent);
+      console.log(`Password reset email sent successfully to ${email}`);
+    } catch (emailError) {
+      console.error("Email sending error:", emailError);
+      // Log the detailed error but still return success to prevent user enumeration
+      console.error("SMTP Configuration:", {
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        user: process.env.SMTP_USER,
+        from: process.env.SMTP_FROM,
+      });
+      // Still return success for security
+    }
 
     return NextResponse.json(
       { message: "If an account exists with this email, you will receive a password reset link." },
       { status: 200 }
     );
   } catch (error) {
-    console.error("Forgot Password Error:", error);
+    console.error("Forgot Password Error - Unexpected:", error);
+    // Return generic success message for security (don't expose errors)
     return NextResponse.json(
-      { message: "Internal Server Error" },
-      { status: 500 }
+      { message: "If an account exists with this email, you will receive a password reset link." },
+      { status: 200 }
     );
   }
 }

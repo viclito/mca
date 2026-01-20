@@ -29,11 +29,15 @@ export async function sendEmail(to: string, subject: string, html: string) {
 export async function broadcastNotification(title: string, message: string, link?: string) {
   try {
     await dbConnect();
-    const students = await User.find({ role: "student", isApproved: true }).select("email");
-    const emails = students.map((s) => s.email);
+    // Fetch all approved students, admins, and super_admins
+    const users = await User.find({ 
+      role: { $in: ["student", "admin", "super_admin"] },
+      isApproved: true 
+    }).select("email");
+    const emails = users.map((u) => u.email);
 
     if (emails.length === 0) {
-      console.log("No approved students to broadcast to.");
+      console.log("No approved users to broadcast to.");
       return;
     }
 
@@ -70,7 +74,7 @@ export async function broadcastNotification(title: string, message: string, link
       html,
     });
 
-    console.log(`Successfully broadcasted notification to ${emails.length} students.`);
+    console.log(`Successfully broadcasted notification to ${emails.length} users (students, admins, and super_admins).`);
   } catch (error) {
     console.error("Broadcasting Error:", error);
     throw error;
