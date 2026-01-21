@@ -39,12 +39,17 @@ import {
   Image as ImageIcon, 
   ArrowLeft,
   FileSpreadsheet,
-  Trash2
+  Trash2,
+  Users,
+  Clock as ClockIcon,
+  ShieldCheck
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { generateCSV, downloadCSV } from "@/lib/csvGenerator";
 import { cn } from "@/lib/utils";
+import { motion, AnimatePresence } from "framer-motion";
+import { format } from "date-fns";
 
 interface Information {
   _id: string;
@@ -154,8 +159,9 @@ export default function StudentInformationDetailPage() {
       });
 
       if (!res.ok) throw new Error("Upload failed");
-      const urls = await res.json();
-      setProofImages([...proofImages, ...(Array.isArray(urls) ? urls : [urls])]);
+      const result = await res.json();
+      const url = result.url;
+      setProofImages([...proofImages, url]);
     } catch (error) {
       console.error(error);
       alert("Failed to upload image");
@@ -169,162 +175,261 @@ export default function StudentInformationDetailPage() {
   };
 
   if (isLoading) {
-    return <div className="container py-10 flex flex-col items-center gap-4">
-      <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-      <p className="text-muted-foreground animate-pulse">Loading table data...</p>
-    </div>;
+    return (
+      <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center gap-2">
+        <Loader2 className="h-6 w-6 animate-spin text-black" />
+        <p className="text-gray-400 text-[10px] font-bold tracking-tight uppercase">Syncing...</p>
+      </div>
+    );
   }
 
-  if (!data) return <div className="container py-10">Table not found.</div>;
+  if (!data) return <div className="container py-20 text-center font-semibold text-lg">Table not found.</div>;
 
   const { information, rows } = data;
 
-  return (
-    <div className="container py-6 lg:py-10 space-y-8 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <Link href="/student/information" className="text-sm text-blue-600 hover:underline flex items-center gap-1 mb-2">
-            <ArrowLeft className="h-3 w-3" /> Back to tables
-          </Link>
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold tracking-tight">{information.title}</h1>
-            <Badge variant="outline" className="capitalize">
-              {information.permissionMode.replace(/-/g, ' ')}
-            </Badge>
-          </div>
-          {information.description && (
-            <p className="text-muted-foreground">{information.description}</p>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExport} className="rounded-full">
-            <Download className="mr-2 h-4 w-4" /> Download CSV
-          </Button>
-        </div>
-      </div>
+  // Sorting logic for the first column (usually Serial Number)
+  const sortedRows = useMemo(() => {
+    if (!rows || rows.length === 0 || !information.columns[0]) return rows;
+    const firstCol = information.columns[0];
+    return [...rows].sort((a, b) => {
+      const valA = a.data[firstCol];
+      const valB = b.data[firstCol];
+      
+      // Try numeric sort first
+      const numA = parseFloat(valA);
+      const numB = parseFloat(valB);
+      
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numA - numB;
+      }
+      
+      // Fallback to string sort
+      return String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
+    });
+  }, [rows, information.columns]);
 
-      <Card className="rounded-[2rem] border-black/5 shadow-xl overflow-hidden bg-white">
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader className="bg-gray-50/50">
-                <TableRow>
-                  {information.columns.map((col) => (
-                    <TableHead key={col} className="font-bold text-black py-4 uppercase text-[10px] tracking-widest whitespace-nowrap">
-                      {col}
-                    </TableHead>
-                  ))}
-                  {information.permissionMode !== "view-only" && (
-                    <TableHead className="text-right py-4 uppercase text-[10px] tracking-widest">Actions</TableHead>
-                  )}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={information.columns.length + (information.permissionMode !== "view-only" ? 1 : 0)} className="h-32 text-center text-muted-foreground">
-                      No data rows found.
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  rows.map((row) => (
-                    <TableRow key={row._id} className="hover:bg-gray-50/50 transition-colors group">
+  return (
+    <div className="min-h-screen bg-[#F5F5F7] pb-10">
+      <div className="container py-4 lg:py-6 max-w-[1400px] mx-auto px-4 md:px-6 space-y-4">
+        
+        {/* Navigation & Title Section */}
+        <motion.div 
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex flex-col md:flex-row md:items-end justify-between gap-4 pb-1"
+        >
+          <div className="space-y-2">
+            <Link 
+              href="/student/information" 
+              className="group flex items-center gap-1.5 text-[8px] font-black text-gray-400 hover:text-black transition-colors uppercase tracking-[0.2em]"
+            >
+              <ArrowLeft className="h-2.5 w-2.5 group-hover:-translate-x-0.5 transition-transform text-gray-300" /> 
+              Directory
+            </Link>
+            <div className="space-y-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-xl md:text-3xl font-bold tracking-tight text-gray-900 leading-none">{information.title}</h1>
+                <Badge variant="outline" className="rounded-full px-2 py-0 bg-gray-100 text-gray-600 border-gray-200 text-[8px] font-black uppercase tracking-widest shadow-none">
+                  {information.permissionMode.replace(/-/g, ' ')}
+                </Badge>
+              </div>
+              {information.description && (
+                <p className="text-xs text-gray-500 font-medium leading-tight max-w-xl">
+                  {information.description}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleExport} 
+              className="rounded-full h-8 px-4 text-[10px] font-bold border hover:bg-white bg-white/50 backdrop-blur-md shadow-none transition-all active:scale-95"
+            >
+              <Download className="mr-1.5 h-3 w-3 text-gray-400" /> Export CSV
+            </Button>
+          </div>
+        </motion.div>
+
+        {/* Dynamic Table Card */}
+        <motion.div
+           initial={{ opacity: 0, y: 10 }}
+           animate={{ opacity: 1, y: 0 }}
+           transition={{ type: "spring", stiffness: 300, damping: 30, delay: 0.05 }}
+        >
+          <Card className="rounded-[1.5rem] border-0 shadow-lg bg-white/95 backdrop-blur-2xl overflow-hidden ring-1 ring-black/5">
+            <CardContent className="p-0">
+              <div className="relative overflow-x-auto">
+                <Table className="border-collapse">
+                  <TableHeader>
+                    <TableRow className="border-b border-gray-100 bg-gray-50/50">
                       {information.columns.map((col) => (
-                        <TableCell key={col} className="py-4 whitespace-nowrap">
-                          {editingRowId === row._id ? (
-                            <Input 
-                              value={editedData[col] || ""} 
-                              onChange={(e) => setEditedData({ ...editedData, [col]: e.target.value })}
-                              className="h-8 text-sm min-w-[120px]"
-                            />
-                          ) : (
-                            <span className="text-sm text-gray-700">{row.data[col]}</span>
-                          )}
-                        </TableCell>
+                        <TableHead key={col} className="font-black text-black/40 py-3 uppercase text-[8px] tracking-[0.2em] whitespace-nowrap pl-6 pr-3">
+                          {col}
+                        </TableHead>
                       ))}
                       {information.permissionMode !== "view-only" && (
-                        <TableCell className="text-right py-4">
-                          {editingRowId === row._id ? (
-                            <div className="flex justify-end gap-1">
-                              <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600 hover:bg-green-50" onClick={handleSave}>
-                                <Check className="h-4 w-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600 hover:bg-red-50" onClick={() => setEditingRowId(null)}>
-                                <X className="h-4 w-4" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button size="icon" variant="ghost" className="h-8 w-8 group-hover:bg-blue-50 group-hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-all" onClick={() => startEditing(row)}>
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </TableCell>
+                        <TableHead className="sticky right-0 z-20 bg-gray-50/90 backdrop-blur shadow-[-4px_0_4px_-2px_rgba(0,0,0,0.02)] text-right py-3 uppercase text-[8px] font-black tracking-[0.2em] pr-6 text-black/40">
+                          Actions
+                        </TableHead>
                       )}
                     </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </div>
-        </CardContent>
-      </Card>
+                  </TableHeader>
+                  <TableBody>
+                    <AnimatePresence mode="popLayout">
+                      {sortedRows.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={information.columns.length + (information.permissionMode !== "view-only" ? 1 : 0)} className="h-32 text-center">
+                            <div className="flex flex-col items-center gap-1.5 text-gray-400 font-bold text-[10px]">
+                              <FileSpreadsheet className="h-6 w-6 opacity-10" />
+                              EMPTY DATASET
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        sortedRows.map((row, index) => (
+                          <motion.tr 
+                            key={row._id}
+                            initial={{ opacity: 0, y: 2 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.02 }}
+                            className="hover:bg-gray-50/30 transition-colors group border-b border-gray-50/50 last:border-0"
+                          >
+                            {information.columns.map((col, cIdx) => (
+                              <TableCell key={col} className={cn("py-2.5 whitespace-nowrap", cIdx === 0 && "pl-6")}>
+                                {editingRowId === row._id ? (
+                                  <Input 
+                                    value={editedData[col] || ""} 
+                                    onChange={(e) => setEditedData({ ...editedData, [col]: e.target.value })}
+                                    className="h-7 text-[10px] font-bold rounded border-gray-200 focus-visible:ring-black min-w-[100px] shadow-none bg-white p-2"
+                                  />
+                                ) : (
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-gray-900 group-hover:text-black transition-colors text-[10px] tracking-tight">{row.data[col]}</span>
+                                    {cIdx === 0 && (row.lastEditedBy || row.lastEditedAt) && (
+                                      <div className="flex items-center gap-1.5 mt-0.5 text-[7px] font-black text-gray-300 uppercase tracking-widest leading-none">
+                                        {row.lastEditedBy && <span className="flex items-center gap-0.5"><Users className="h-1.5 w-1.5" /> {row.lastEditedBy.name}</span>}
+                                        {row.lastEditedAt && <span className="flex items-center gap-0.5"><ClockIcon className="h-1.5 w-1.5" /> {format(new Date(row.lastEditedAt), "MMM d")}</span>}
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </TableCell>
+                            ))}
+                            {information.permissionMode !== "view-only" && (
+                              <TableCell className="sticky right-0 z-10 bg-white group-hover:bg-gray-50/90 transition-colors shadow-[-4px_0_4px_-2px_rgba(0,0,0,0.02)] text-right py-2 pr-6">
+                                {editingRowId === row._id ? (
+                                  <div className="flex justify-end gap-1">
+                                    <Button size="icon" className="h-6 w-6 rounded bg-black text-white hover:bg-zinc-800 shadow-none" onClick={handleSave}>
+                                      <Check className="h-3 w-3" />
+                                    </Button>
+                                    <Button size="icon" variant="ghost" className="h-6 w-6 rounded text-gray-400 hover:bg-gray-50" onClick={() => setEditingRowId(null)}>
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <Button 
+                                    size="icon" 
+                                    variant="ghost" 
+                                    className="h-7 w-7 rounded-lg text-gray-400 hover:bg-black hover:text-white transition-all duration-200 shadow-none border border-transparent" 
+                                    onClick={() => startEditing(row)}
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </TableCell>
+                            )}
+                          </motion.tr>
+                        ))
+                      )}
+                    </AnimatePresence>
+                  </TableBody>
+                </Table>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
 
-      <div className="flex justify-end">
-         <p className="text-[10px] text-gray-400 italic">
-           * Tables are generated dynamically from CSV data. {information.permissionMode === 'edit-with-proof' && 'Changes require administrative approval.'}
-         </p>
+
+        {/* Footer info */}
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="flex flex-col md:flex-row items-center justify-between gap-6 px-10"
+        >
+          <div className="flex items-center gap-3 text-[10px] font-black text-gray-400 uppercase tracking-widest">
+            <ShieldCheck className="h-4 w-4 text-green-500" />
+            Verified data hub • SECURE ENDPOINT
+          </div>
+          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-tighter text-center md:text-right">
+             Tables are generated dynamically. {information.permissionMode === 'edit-with-proof' && 'Changes require verification proof for administrative safety.'}
+          </p>
+        </motion.div>
       </div>
 
+      {/* Proof Modal */}
       <Dialog open={proofDialogOpen} onOpenChange={setProofDialogOpen}>
-        <DialogContent className="sm:max-w-md rounded-[2rem]">
-          <DialogHeader>
-            <DialogTitle>Verification Required</DialogTitle>
-            <DialogDescription>
-              To change this record, you must provide photo proof for administrative verification.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-             <div className="space-y-2">
-                <Label>Upload Identification/Proof Photos</Label>
-                <div className="grid grid-cols-2 gap-2 mb-2">
-                  {proofImages.map((img, idx) => (
-                    <div key={idx} className="relative group rounded-xl overflow-hidden border aspect-video">
-                      <img src={img} alt="Proof" className="w-full h-full object-cover" />
-                      <Button 
-                        variant="destructive" 
-                        size="icon" 
-                        className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={() => removeProofImage(idx)}
+        <DialogContent className="sm:max-w-xl rounded-[3rem] border-0 shadow-3xl bg-white/95 backdrop-blur-2xl p-0 overflow-hidden ring-1 ring-black/5">
+          <div className="p-10 space-y-8">
+            <DialogHeader>
+               <div className="h-14 w-14 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center mb-4">
+                  <ShieldCheck className="h-8 w-8" />
+               </div>
+              <DialogTitle className="text-3xl font-bold tracking-tight">Security Verification</DialogTitle>
+              <DialogDescription className="text-lg font-medium text-gray-500 leading-relaxed">
+                To maintain data integrity, please provide photo evidence (Identification, Form Proof, etc.) for administrative review.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-6">
+               <div className="space-y-4">
+                  <Label className="text-xs font-black uppercase tracking-widest text-gray-400 pl-1">Documentation Proof</Label>
+                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                    {proofImages.map((img, idx) => (
+                      <motion.div 
+                        key={idx} 
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="relative group rounded-2xl overflow-hidden border-2 border-gray-100 aspect-square shadow-sm"
                       >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex gap-2 items-center">
-                  <Input 
-                    type="file" 
-                    accept="image/*" 
-                    multiple 
-                    onChange={handleFileUpload} 
-                    disabled={uploading}
-                    className="rounded-xl"
-                  />
-                  {uploading && <Loader2 className="h-4 w-4 animate-spin" />}
-                </div>
-             </div>
+                        <img src={img} alt="Proof" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button 
+                            variant="destructive" 
+                            size="icon" 
+                            className="h-10 w-10 rounded-xl"
+                            onClick={() => removeProofImage(idx)}
+                          >
+                            <Trash2 className="h-5 w-5" />
+                          </Button>
+                        </div>
+                      </motion.div>
+                    ))}
+                    <label className={cn(
+                      "cursor-pointer flex flex-col items-center justify-center border-3 border-dashed rounded-3xl transition-all duration-300 aspect-square group",
+                      uploading ? "opacity-50 pointer-events-none" : "hover:bg-blue-50 hover:border-blue-200 border-gray-100"
+                    )}>
+                      {uploading ? <Loader2 className="h-8 w-8 animate-spin text-blue-600" /> : <ImageIcon className="h-8 w-8 text-gray-300 group-hover:text-blue-500" />}
+                      <span className="text-[10px] font-black uppercase text-gray-400 mt-2 group-hover:text-blue-600">Add Image</span>
+                      <input type="file" accept="image/*" multiple className="hidden" onChange={handleFileUpload} />
+                    </label>
+                  </div>
+               </div>
+            </div>
+            
+            <DialogFooter className="pt-4 border-t border-gray-100">
+              <Button variant="ghost" className="rounded-2xl h-14 font-bold text-gray-500 hover:text-black" onClick={() => setProofDialogOpen(false)}>Cancel</Button>
+              <Button 
+                className="rounded-2xl bg-black text-white hover:bg-zinc-800 h-14 px-10 font-bold shadow-2xl flex-1 md:flex-none" 
+                onClick={submitWithProof} 
+                disabled={proofImages.length === 0 || updateMutation.isPending}
+              >
+                {updateMutation.isPending && <Loader2 className="mr-3 h-5 w-5 animate-spin" />}
+                Transmit Request
+              </Button>
+            </DialogFooter>
           </div>
-          <DialogFooter>
-            <Button variant="outline" className="rounded-full" onClick={() => setProofDialogOpen(false)}>Cancel</Button>
-            <Button 
-              className="rounded-full bg-blue-600 hover:bg-blue-700" 
-              onClick={submitWithProof} 
-              disabled={proofImages.length === 0 || updateMutation.isPending}
-            >
-              {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Submit Request
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

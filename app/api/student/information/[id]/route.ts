@@ -3,6 +3,7 @@ import dbConnect from "@/lib/db";
 import Information from "@/lib/models/Information";
 import InformationRow from "@/lib/models/InformationRow";
 import ChangeRequest from "@/lib/models/ChangeRequest";
+import { auth } from "@/auth";
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -28,6 +29,11 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
 export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
     await dbConnect();
+    const session = await auth();
+    if (!session?.user?.id) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
     const { id } = await params;
     const body = await req.json();
     const { rowId, data, proofImages } = body;
@@ -51,7 +57,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         rowId,
         {
           data,
-          lastEditedBy: null, // Removed session dependency
+          lastEditedBy: session.user.id,
           lastEditedAt: new Date(),
         },
         { new: true }
@@ -69,7 +75,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         rowId,
         proposedChanges: data,
         proofImages,
-        requestedBy: null, // Removed session dependency
+        requestedBy: session.user.id,
       });
 
       return NextResponse.json({ changeRequest, requiresApproval: true });

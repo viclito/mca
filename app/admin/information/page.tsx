@@ -252,18 +252,20 @@ export default function InformationPage() {
               <CardHeader>
                 <CardTitle className="text-base flex items-center justify-between">
                   {info.title}
+                </CardTitle>
+                <div className="mt-1">
                   <Badge variant={info.active ? "default" : "secondary"}>
                     {info.active ? "Active" : "Inactive"}
                   </Badge>
-                </CardTitle>
+                </div>
                 <CardDescription>{info.description || "No description"}</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-2 text-sm">
-                  <p>
+                  <div className="flex items-center gap-2">
                     <span className="font-medium">Mode:</span>{" "}
                     <Badge variant="outline">{info.permissionMode}</Badge>
-                  </p>
+                  </div>
                   <p className="text-muted-foreground">{info.columns.length} columns</p>
                   <div className="flex gap-2 pt-2">
                     <Button size="sm" variant="outline" onClick={() => handleDownload(info._id, info.title)}>

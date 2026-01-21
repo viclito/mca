@@ -110,6 +110,8 @@ export async function broadcastInformation(title: string, description?: string) 
       return;
     }
 
+    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e1e1e1; border-radius: 10px; overflow: hidden;">
         <div style="background-color: #6366f1; padding: 20px; text-align: center;">
@@ -120,7 +122,7 @@ export async function broadcastInformation(title: string, description?: string) 
           <p style="font-size: 16px; margin-bottom: 20px;">A new information table has been shared on the MCA Portal.</p>
           ${description ? `<div style="background-color: #f3f4f6; padding: 15px; border-radius: 8px; font-style: italic; margin-bottom: 25px;">${description}</div>` : ''}
           <div style="text-align: center; margin-top: 30px;">
-            <a href="${process.env.NEXTAUTH_URL}/student/information" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">View Information</a>
+            <a href="${baseUrl}/student/information" style="background-color: #6366f1; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">View Information</a>
           </div>
         </div>
         <div style="background-color: #f9fafb; padding: 15px; text-align: center; color: #6b7280; font-size: 12px; border-top: 1px solid #e1e1e1;">
@@ -139,5 +141,6 @@ export async function broadcastInformation(title: string, description?: string) 
     console.log(`Successfully broadcasted information update to ${emails.length} users.`);
   } catch (error) {
     console.error("Broadcasting Information Error:", error);
+    throw error;
   }
 }

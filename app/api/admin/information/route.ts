@@ -44,8 +44,9 @@ export async function POST(req: Request) {
     }));
     await InformationRow.insertMany(rowDocs);
 
-    // Broadcast notification in background
-    broadcastInformation(title, description).catch(err => console.error("Broadcast skip error:", err));
+    // Broadcast notification
+    console.log("Initiating information broadcast for:", title);
+    await broadcastInformation(title, description).catch(err => console.error("Broadcast failed:", err));
 
     return NextResponse.json(information);
   } catch (error) {
