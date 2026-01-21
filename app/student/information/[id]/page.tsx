@@ -86,6 +86,30 @@ export default function StudentInformationDetailPage() {
     },
   });
 
+  // Sorting logic for the first column (usually Serial Number)
+  const sortedRows = useMemo(() => {
+    const rows = data?.rows;
+    const information = data?.information;
+    if (!rows || rows.length === 0 || !information?.columns?.[0]) return rows || [];
+    
+    const firstCol = information.columns[0];
+    return [...rows].sort((a, b) => {
+      const valA = a.data[firstCol];
+      const valB = b.data[firstCol];
+      
+      // Try numeric sort first
+      const numA = parseFloat(String(valA));
+      const numB = parseFloat(String(valB));
+      
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numA - numB;
+      }
+      
+      // Fallback to string sort
+      return String(valA || "").localeCompare(String(valB || ""), undefined, { numeric: true, sensitivity: 'base' });
+    });
+  }, [data]);
+
   const updateMutation = useMutation({
     mutationFn: async (payload: any) => {
       const res = await fetch(`/api/student/information/${id}`, {
@@ -187,27 +211,6 @@ export default function StudentInformationDetailPage() {
 
   const { information, rows } = data;
 
-  // Sorting logic for the first column (usually Serial Number)
-  const sortedRows = useMemo(() => {
-    if (!rows || rows.length === 0 || !information.columns[0]) return rows;
-    const firstCol = information.columns[0];
-    return [...rows].sort((a, b) => {
-      const valA = a.data[firstCol];
-      const valB = b.data[firstCol];
-      
-      // Try numeric sort first
-      const numA = parseFloat(valA);
-      const numB = parseFloat(valB);
-      
-      if (!isNaN(numA) && !isNaN(numB)) {
-        return numA - numB;
-      }
-      
-      // Fallback to string sort
-      return String(valA).localeCompare(String(valB), undefined, { numeric: true, sensitivity: 'base' });
-    });
-  }, [rows, information.columns]);
-
   return (
     <div className="min-h-screen bg-[#F5F5F7] pb-10">
       <div className="container py-4 lg:py-6 max-w-[1400px] mx-auto px-4 md:px-6 space-y-4">
@@ -278,7 +281,7 @@ export default function StudentInformationDetailPage() {
                   <TableBody>
                     <AnimatePresence mode="popLayout">
                       {sortedRows.length === 0 ? (
-                        <TableRow>
+                        <TableRow key="empty">
                           <TableCell colSpan={information.columns.length + (information.permissionMode !== "view-only" ? 1 : 0)} className="h-32 text-center">
                             <div className="flex flex-col items-center gap-1.5 text-gray-400 font-bold text-[10px]">
                               <FileSpreadsheet className="h-6 w-6 opacity-10" />
