@@ -26,7 +26,7 @@ export async function sendEmail(to: string, subject: string, html: string) {
   }
 }
 
-export async function broadcastNotification(title: string, message: string | undefined, link?: string, images?: string[]) {
+export async function broadcastNotification(title: string, message: string | undefined, link?: string, images?: string[], origin?: string) {
   try {
     await dbConnect();
     // Fetch all approved students, admins, and super_admins
@@ -39,6 +39,22 @@ export async function broadcastNotification(title: string, message: string | und
     if (emails.length === 0) {
       console.log("No approved users to broadcast to.");
       return;
+    }
+
+    // Determine Base URL
+    let baseUrl = origin || process.env.NEXTAUTH_URL;
+    if (!baseUrl && process.env.VERCEL_URL) {
+      baseUrl = `https://${process.env.VERCEL_URL}`;
+    }
+    if (!baseUrl) {
+      baseUrl = "http://localhost:3000";
+    }
+    baseUrl = baseUrl.replace(/\/$/, "");
+
+    // Ensure link is absolute
+    let absoluteLink = link;
+    if (link && link.startsWith("/")) {
+      absoluteLink = `${baseUrl}${link}`;
     }
 
     // Build images HTML section if images are present
@@ -59,15 +75,15 @@ export async function broadcastNotification(title: string, message: string | und
         <div style="background-color: #0070f3; padding: 20px; text-align: center;">
           <h1 style="color: #ffffff; margin: 0;">MCA Portal Notification</h1>
         </div>
-        <div style="padding: 30px; line-height: 1.6; color: #333 text-align: left;">
+        <div style="padding: 30px; line-height: 1.6; color: #333; text-align: left;">
           <h2 style="color: #0070f3;">${title}</h2>
           ${imagesHtml}
           ${message ? `<p style="font-size: 16px;">${message}</p>` : ''}
           ${
-            link
+            absoluteLink
               ? `
             <div style="margin-top: 30px; text-align: center;">
-              <a href="${link}" style="background-color: #0070f3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Details</a>
+              <a href="${absoluteLink}" style="background-color: #0070f3; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold;">View Details</a>
             </div>
           `
               : ""
@@ -95,7 +111,7 @@ export async function broadcastNotification(title: string, message: string | und
   }
 }
 
-export async function broadcastInformation(title: string, description?: string) {
+export async function broadcastInformation(title: string, description?: string, origin?: string) {
   try {
     await dbConnect();
     // Fetch all approved students, admins, and super_admins
@@ -110,7 +126,17 @@ export async function broadcastInformation(title: string, description?: string) 
       return;
     }
 
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+    // Determine Base URL: 1. Passed Origin, 2. NEXTAUTH_URL, 3. VERCEL_URL, 4. Localhost
+    let baseUrl = origin || process.env.NEXTAUTH_URL;
+    if (!baseUrl && process.env.VERCEL_URL) {
+      baseUrl = `https://${process.env.VERCEL_URL}`;
+    }
+    if (!baseUrl) {
+      baseUrl = "http://localhost:3000";
+    }
+
+    // Ensure baseUrl doesn't have a trailing slash for consistency
+    baseUrl = baseUrl.replace(/\/$/, "");
 
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e1e1e1; border-radius: 10px; overflow: hidden;">
@@ -138,7 +164,7 @@ export async function broadcastInformation(title: string, description?: string) 
       html,
     });
 
-    console.log(`Successfully broadcasted information update to ${emails.length} users.`);
+    console.log(`Successfully broadcasted information update to ${emails.length} users using base URL: ${baseUrl}`);
   } catch (error) {
     console.error("Broadcasting Information Error:", error);
     throw error;

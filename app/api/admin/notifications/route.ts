@@ -55,7 +55,8 @@ export async function POST(req: Request) {
 
     // Broadcast email to all users in background
     // We don't await this to ensure fast response to Admin UI
-    broadcastNotification(title, message, link, images || []).catch(err => console.error("Broadcast failed:", err));
+    const origin = new URL(req.url).origin;
+    broadcastNotification(title, message, link, images || [], origin).catch(err => console.error("Broadcast failed:", err));
 
     return NextResponse.json(notification);
   } catch (error) {

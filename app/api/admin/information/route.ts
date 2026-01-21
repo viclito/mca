@@ -46,7 +46,8 @@ export async function POST(req: Request) {
 
     // Broadcast notification
     console.log("Initiating information broadcast for:", title);
-    await broadcastInformation(title, description).catch(err => console.error("Broadcast failed:", err));
+    const origin = new URL(req.url).origin;
+    await broadcastInformation(title, description, origin).catch(err => console.error("Broadcast failed:", err));
 
     return NextResponse.json(information);
   } catch (error) {
