@@ -8,11 +8,11 @@ const NotificationSchema = new Schema(
     },
     message: {
       type: String,
-      required: true,
+      required: false, // Optional for image notifications
     },
     type: {
       type: String,
-      enum: ["exam", "fees", "general", "seminar", "viva"],
+      enum: ["exam", "fees", "general", "seminar", "viva", "image"],
       default: "general",
     },
     isMain: {
@@ -30,7 +30,11 @@ const NotificationSchema = new Schema(
       type: String, // Optional URL for PDF or external link
     },
     image: {
-      type: String, // Optional URL for Image
+      type: String, // Optional URL for single image (backward compatibility)
+    },
+    images: {
+      type: [String], // Array of image URLs for multiple images
+      default: [],
     },
     active: {
       type: Boolean,

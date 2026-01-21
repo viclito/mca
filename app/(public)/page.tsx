@@ -44,9 +44,10 @@ interface Notification {
   _id: string;
   title: string;
   message: string;
-  type: "exam" | "fees" | "general" | "seminar" | "viva";
+  type: "exam" | "fees" | "general" | "seminar" | "viva" | "image";
   link?: string;
   image?: string;
+  images?: string[];
   active: boolean;
   createdAt: string;
   isMain: boolean;
@@ -291,7 +292,22 @@ export default function Home() {
                                 </SheetDescription>
                             </SheetHeader>
                             <div className="mt-6 space-y-6">
-                                        {mainNotification.image && (
+                                        {/* Display multiple images for image notifications */}
+                                        {mainNotification.type === "image" && mainNotification.images && mainNotification.images.length > 0 && (
+                                            <div className="space-y-3">
+                                                {mainNotification.images.map((img, idx) => (
+                                                    <div key={idx} className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+                                                        <img 
+                                                            src={getDirectImageUrl(img)} 
+                                                            alt={`${mainNotification.title} - Image ${idx + 1}`} 
+                                                            className="w-full h-auto object-cover" 
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        )}
+                                        {/* Display single image for backward compatibility */}
+                                        {mainNotification.type !== "image" && mainNotification.image && (
                                             <div className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
                                                 <img 
                                                     src={getDirectImageUrl(mainNotification.image)} 
@@ -300,9 +316,11 @@ export default function Home() {
                                                 />
                                             </div>
                                         )}
-                                <div className="text-sm text-gray-600 leading-relaxed">
-                                    {mainNotification.message}
-                                </div>
+                                {mainNotification.message && (
+                                    <div className="text-sm text-gray-600 leading-relaxed">
+                                        {mainNotification.message}
+                                    </div>
+                                )}
                                 {mainNotification.timetable && mainNotification.timetable.length > 0 && (
                                 <Table>
                                     <TableHeader>
@@ -407,7 +425,7 @@ export default function Home() {
                                     <SheetTrigger asChild>
                                 <div className={cn("group cursor-pointer hover:bg-gray-50/50 transition-colors p-3 -mx-3 rounded-xl", idx !== otherNotifications.length - 1 && "border-b border-gray-100 pb-6 mb-2")}>
                                      <div className="flex items-start justify-between gap-4">
-                                        <div className="space-y-1.5">
+                                        <div className="space-y-1.5 flex-1">
                                             <div className="flex items-center gap-2">
                                                 {/* Dot indicator for type */}
                                                 <span className={cn("h-1.5 w-1.5 rounded-full", {
@@ -415,6 +433,7 @@ export default function Home() {
                                                     "bg-blue-500": note.type === 'general',
                                                     "bg-purple-500": note.type === 'seminar',
                                                     "bg-emerald-500": note.type === 'viva',
+                                                    "bg-pink-500": note.type === 'image',
                                                 })} />
                                                 <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
                                                     {new Date(note.createdAt).toLocaleDateString()}
@@ -423,9 +442,31 @@ export default function Home() {
                                             <h3 className="text-base font-semibold text-black leading-snug group-hover:text-blue-600 transition-colors">
                                                 {note.title}
                                             </h3>
-                                            <p className="text-sm text-gray-500 leading-relaxed line-clamp-3">
-                                                {note.message}
-                                            </p>
+                                            {/* Show image preview for image notifications */}
+                                            {note.type === "image" && note.images && note.images.length > 0 && (
+                                                <div className="flex gap-2 mt-2">
+                                                    {note.images.slice(0, 3).map((img, imgIdx) => (
+                                                        <div key={imgIdx} className="w-16 h-16 rounded-md overflow-hidden border border-gray-200">
+                                                            <img 
+                                                                src={getDirectImageUrl(img)} 
+                                                                alt={`Preview ${imgIdx + 1}`} 
+                                                                className="w-full h-full object-cover" 
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                    {note.images.length > 3 && (
+                                                        <div className="w-16 h-16 rounded-md bg-gray-100 flex items-center justify-center border border-gray-200">
+                                                            <span className="text-xs font-semibold text-gray-500">+{note.images.length - 3}</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                            {/* Show message preview for non-image notifications */}
+                                            {note.type !== "image" && note.message && (
+                                                <p className="text-sm text-gray-500 leading-relaxed line-clamp-3">
+                                                    {note.message}
+                                                </p>
+                                            )}
                                         </div>
                                      </div>
                                     
@@ -447,7 +488,22 @@ export default function Home() {
                                             <SheetDescription>{note.message}</SheetDescription>
                                         </SheetHeader>
                                         <div className="mt-6 space-y-6">
-                                            {note.image && (
+                                            {/* Display multiple images for image notifications */}
+                                            {note.type === "image" && note.images && note.images.length > 0 && (
+                                                <div className="space-y-3">
+                                                    {note.images.map((img, idx) => (
+                                                        <div key={idx} className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+                                                            <img 
+                                                                src={getDirectImageUrl(img)} 
+                                                                alt={`${note.title} - Image ${idx + 1}`} 
+                                                                className="w-full h-auto object-cover" 
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                            {/* Display single image for backward compatibility */}
+                                            {note.type !== "image" && note.image && (
                                                 <div className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
                                                     <img 
                                                         src={getDirectImageUrl(note.image)} 
@@ -456,9 +512,11 @@ export default function Home() {
                                                     />
                                                 </div>
                                             )}
-                                            <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-                                                {note.message}
-                                            </div>
+                                            {note.message && (
+                                                <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
+                                                    {note.message}
+                                                </div>
+                                            )}
                                             {note.timetable && note.timetable.length > 0 && (
                                                 <Table>
                                                 <TableHeader>

@@ -18,10 +18,23 @@ export async function POST(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
-    const { title, message, type, link, image, isMain, timetable } = body;
+    const { title, message, type, link, image, images, isMain, timetable } = body;
 
-    if (!title || !message) {
-      return new NextResponse("Title and Message are required", { status: 400 });
+    // Title is always required
+    if (!title) {
+      return new NextResponse("Title is required", { status: 400 });
+    }
+
+    // For image notifications, images array is required, message is optional
+    // For other types, message is required
+    if (type === "image") {
+      if (!images || images.length === 0) {
+        return new NextResponse("At least one image is required for image notifications", { status: 400 });
+      }
+    } else {
+      if (!message) {
+        return new NextResponse("Message is required", { status: 400 });
+      }
     }
 
     // If isMain is true, unset it for all other notifications
@@ -35,13 +48,14 @@ export async function POST(req: Request) {
       type,
       link,
       image,
+      images: images || [],
       isMain: isMain || false,
       timetable: timetable || [],
     });
 
-    // Broadcast email to students in background
+    // Broadcast email to all users in background
     // We don't await this to ensure fast response to Admin UI
-    broadcastNotification(title, message, link).catch(err => console.error("Broadcast failed:", err));
+    broadcastNotification(title, message, link, images || []).catch(err => console.error("Broadcast failed:", err));
 
     return NextResponse.json(notification);
   } catch (error) {
@@ -54,7 +68,7 @@ export async function PUT(req: Request) {
   try {
     await dbConnect();
     const body = await req.json();
-    const { id, title, message, type, link, image, active, isMain, timetable } = body;
+    const { id, title, message, type, link, image, images, active, isMain, timetable } = body;
 
     if (!id) {
       return new NextResponse("ID is required", { status: 400 });
@@ -67,7 +81,7 @@ export async function PUT(req: Request) {
 
     const notification = await Notification.findByIdAndUpdate(
       id,
-      { title, message, type, link, image, active, isMain, timetable },
+      { title, message, type, link, image, images, active, isMain, timetable },
       { new: true }
     );
 

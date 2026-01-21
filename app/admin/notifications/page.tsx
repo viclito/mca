@@ -44,9 +44,10 @@ interface Notification {
   _id: string;
   title: string;
   message: string;
-  type: "exam" | "fees" | "general" | "seminar" | "viva";
+  type: "exam" | "fees" | "general" | "seminar" | "viva" | "image";
   link?: string;
   image?: string;
+  images?: string[];
   active: boolean;
   isMain: boolean;
   timetable?: TimetableEntry[];
@@ -60,9 +61,10 @@ export default function NotificationsPage() {
   // Form States
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
-  const [type, setType] = useState<"exam" | "fees" | "general" | "seminar" | "viva">("general");
+  const [type, setType] = useState<"exam" | "fees" | "general" | "seminar" | "viva" | "image">("general");
   const [link, setLink] = useState("");
   const [image, setImage] = useState("");
+  const [images, setImages] = useState<string[]>([]); // Multiple images
   const [uploading, setUploading] = useState(false); // New state for upload status
   const [isActive, setIsActive] = useState(true);
   const [isMain, setIsMain] = useState(false);
@@ -162,25 +164,83 @@ export default function NotificationsPage() {
     }
   };
 
+  // Handle multiple image uploads
+  const handleMultipleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    
+    setUploading(true);
+    const uploadedUrls: string[] = [];
+
+    try {
+      for (const file of Array.from(e.target.files)) {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const data = await res.json();
+        if (data.success) {
+          uploadedUrls.push(data.url);
+        }
+      }
+
+      setImages([...images, ...uploadedUrls]);
+    } catch (err) {
+      console.error("Error uploading files:", err);
+      alert("Error uploading files");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const removeImage = (index: number) => {
+    const newImages = [...images];
+    newImages.splice(index, 1);
+    setImages(newImages);
+  };
+
   function resetForm() {
     setTitle("");
     setMessage("");
     setType("general");
     setLink("");
     setImage("");
+    setImages([]);
     setIsActive(true);
     setIsMain(false);
     setTimetable([]);
   }
 
   function handleCreate() {
-    if (!title || !message) return;
+    // For image type, title and images are required
+    // For other types, title and message are required
+    if (!title) return;
+    if (type === "image" && images.length === 0) {
+      alert("Please upload at least one image for image notifications");
+      return;
+    }
+    if (type !== "image" && !message) {
+      alert("Message is required for non-image notifications");
+      return;
+    }
+    
     setIsCreating(true);
-    createMutation.mutate({ title, message, type, link, image, isMain, timetable });
+    createMutation.mutate({ title, message, type, link, image, images, isMain, timetable });
   }
 
   function handleUpdate() {
-    if (!editingNotification || !title || !message) return;
+    if (!editingNotification || !title) return;
+    if (type === "image" && images.length === 0) {
+      alert("Please upload at least one image for image notifications");
+      return;
+    }
+    if (type !== "image" && !message) {
+      alert("Message is required for non-image notifications");
+      return;
+    }
+    
     updateMutation.mutate({
       id: editingNotification._id,
       title,
@@ -188,6 +248,7 @@ export default function NotificationsPage() {
       type,
       link,
       image,
+      images,
       active: isActive,
       isMain,
       timetable,
@@ -207,6 +268,7 @@ export default function NotificationsPage() {
     setType(n.type);
     setLink(n.link || "");
     setImage(n.image || "");
+    setImages(n.images || []);
     setIsActive(n.active ?? true);
     setIsMain(n.isMain || false);
     setTimetable(n.timetable || []);
@@ -292,10 +354,6 @@ export default function NotificationsPage() {
                 <Input value={title} onChange={(e: any) => setTitle(e.target.value)} placeholder="e.g. Exam Schedule Release" />
               </div>
               <div className="space-y-2">
-                <Label>Message</Label>
-                <Textarea value={message} onChange={(e: any) => setMessage(e.target.value)} placeholder="Enter detailed message..." />
-              </div>
-              <div className="space-y-2">
                 <Label>Type</Label>
                 <Select value={type} onValueChange={(v: any) => setType(v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -305,9 +363,51 @@ export default function NotificationsPage() {
                     <SelectItem value="fees">Fees</SelectItem>
                     <SelectItem value="seminar">Seminar</SelectItem>
                     <SelectItem value="viva">Viva</SelectItem>
+                    <SelectItem value="image">Image</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {type === "image" ? (
+                // Image notification fields
+                <div className="space-y-2">
+                  <Label>Images (Required)</Label>
+                  {images.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      {images.map((img, idx) => (
+                        <div key={idx} className="relative group">
+                          <img src={img} alt={`Upload ${idx + 1}`} className="w-full h-32 object-cover rounded-md border" />
+                          <Button 
+                            variant="destructive" 
+                            size="icon" 
+                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeImage(idx)}
+                          >
+                            <Trash className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2 items-center">
+                    <Input 
+                      type="file" 
+                      accept="image/*"
+                      multiple
+                      onChange={handleMultipleImageUpload} 
+                      disabled={uploading}
+                    />
+                    {uploading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Upload multiple images (JPG, PNG)</p>
+                </div>
+              ) : (
+                // Regular notification fields
+                <div className="space-y-2">
+                  <Label>Message (Required)</Label>
+                  <Textarea value={message} onChange={(e: any) => setMessage(e.target.value)} placeholder="Enter detailed message..." />
+                </div>
+              )}
 
               {type === "exam" && renderTimetableSection()}
 
@@ -315,10 +415,12 @@ export default function NotificationsPage() {
                 <Label>Link (Optional)</Label>
                 <Input value={link} onChange={(e: any) => setLink(e.target.value)} placeholder="https://..." />
               </div>
-              <div className="space-y-2">
-                <Label>Image URL (Optional)</Label>
-                <Input value={image} onChange={(e: any) => setImage(e.target.value)} placeholder="https://... (Image Link)" />
-              </div>
+              {type !== "image" && (
+                <div className="space-y-2">
+                  <Label>Image URL (Optional)</Label>
+                  <Input value={image} onChange={(e: any) => setImage(e.target.value)} placeholder="https://... (Image Link)" />
+                </div>
+              )}
                <div className="flex items-center space-x-2 pt-2">
                   <Switch checked={isMain} onCheckedChange={setIsMain} id="main-mode" />
                   <Label htmlFor="main-mode">Set as Main Notification</Label>
@@ -328,7 +430,7 @@ export default function NotificationsPage() {
               <SheetClose asChild>
                  <Button variant="outline">Cancel</Button>
               </SheetClose>
-              <Button onClick={handleCreate} disabled={createMutation.isPending || !title || !message}>
+              <Button onClick={handleCreate} disabled={createMutation.isPending || !title || (type === "image" && images.length === 0) || (type !== "image" && !message)}>
                 {createMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Create
               </Button>
@@ -349,10 +451,6 @@ export default function NotificationsPage() {
                 <Input value={title} onChange={(e: any) => setTitle(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Message</Label>
-                <Textarea value={message} onChange={(e: any) => setMessage(e.target.value)} />
-              </div>
-              <div className="space-y-2">
                 <Label>Type</Label>
                 <Select value={type} onValueChange={(v: any) => setType(v)}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
@@ -362,9 +460,51 @@ export default function NotificationsPage() {
                     <SelectItem value="fees">Fees</SelectItem>
                     <SelectItem value="seminar">Seminar</SelectItem>
                      <SelectItem value="viva">Viva</SelectItem>
+                    <SelectItem value="image">Image</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              {type === "image" ? (
+                // Image notification fields
+                <div className="space-y-2">
+                  <Label>Images (Required)</Label>
+                  {images.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 mb-2">
+                      {images.map((img, idx) => (
+                        <div key={idx} className="relative group">
+                          <img src={img} alt={`Upload ${idx + 1}`} className="w-full h-32 object-cover rounded-md border" />
+                          <Button 
+                            variant="destructive" 
+                            size="icon" 
+                            className="absolute top-1 right-1 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => removeImage(idx)}
+                          >
+                            <Trash className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex gap-2 items-center">
+                    <Input 
+                      type="file" 
+                      accept="image/*"
+                      multiple
+                      onChange={handleMultipleImageUpload} 
+                      disabled={uploading}
+                    />
+                    {uploading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+                  </div>
+                  <p className="text-xs text-muted-foreground">Upload multiple images (JPG, PNG)</p>
+                </div>
+              ) : (
+                // Regular notification fields
+                <div className="space-y-2">
+                  <Label>Message (Required)</Label>
+                  <Textarea value={message} onChange={(e: any) => setMessage(e.target.value)} />
+                </div>
+              )}
 
               {type === "exam" && renderTimetableSection()}
 
@@ -372,32 +512,13 @@ export default function NotificationsPage() {
                 <Label>Link (Optional)</Label>
                 <Input value={link} onChange={(e: any) => setLink(e.target.value)} />
               </div>
-              <div className="space-y-2">
-              <Label>Image</Label>
-               {image && (
-                   <div className="mb-2 relative w-full h-40 bg-gray-100 rounded-md overflow-hidden border">
-                       <img src={image} alt="Preview" className="w-full h-full object-cover" />
-                       <Button 
-                            variant="destructive" 
-                            size="icon" 
-                            className="absolute top-2 right-2 h-6 w-6"
-                            onClick={() => setImage("")}
-                        >
-                            <Trash className="h-3 w-3" />
-                        </Button>
-                   </div>
-               )}
-              <div className="flex gap-2 items-center">
-                  <Input 
-                        type="file" 
-                        accept="image/*"
-                        onChange={handleFileUpload} 
-                        disabled={uploading}
-                  />
-                  {uploading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
-              </div>
-              <p className="text-xs text-muted-foreground">Upload an image (JPG, PNG)</p>
-            </div> <div className="flex items-center space-x-2 pt-2">
+              {type !== "image" && (
+                <div className="space-y-2">
+                  <Label>Image URL (Optional)</Label>
+                  <Input value={image} onChange={(e: any) => setImage(e.target.value)} />
+                </div>
+              )}
+              <div className="flex items-center space-x-2 pt-2">
                   <Switch checked={isActive} onCheckedChange={setIsActive} id="active-mode" />
                   <Label htmlFor="active-mode">Active Status</Label>
               </div>
@@ -408,7 +529,7 @@ export default function NotificationsPage() {
             </div>
             <SheetFooter>
               <Button variant="outline" onClick={() => setEditingNotification(null)}>Cancel</Button>
-              <Button onClick={handleUpdate} disabled={updateMutation.isPending || !title || !message}>
+              <Button onClick={handleUpdate} disabled={updateMutation.isPending || !title || (type === "image" && images.length === 0) || (type !== "image" && !message)}>
                 {updateMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                 Update
               </Button>

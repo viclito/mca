@@ -17,7 +17,8 @@ import {
   X,
   Megaphone,
   Info,
-  FileText
+  FileText,
+  FileSpreadsheet
 } from "lucide-react";
 
 
@@ -34,6 +35,7 @@ const sidebarItems = [
   { label: "Content", href: "/admin/content", icon: FileVideo },
   { label: "Forms", href: "/admin/forms", icon: FileText },
   { label: "Notifications", href: "/admin/notifications", icon: Megaphone },
+  { label: "Information", href: "/admin/information", icon: FileSpreadsheet },
 ];
 
 
