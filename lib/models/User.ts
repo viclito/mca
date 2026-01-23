@@ -24,6 +24,10 @@ const UserSchema = new Schema(
       type: Boolean,
       default: false,
     },
+    isStudent: {
+      type: Boolean,
+      default: false,
+    },
     isEmailVerified: {
       type: Boolean,
       default: false,

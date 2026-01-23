@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/select";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
-import { Loader2, CheckCircle, ArrowLeft } from "lucide-react";
+import { Loader2, CheckCircle, ArrowLeft, FileText } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import Link from "next/link";
@@ -106,94 +106,208 @@ export default function FillFormPage() {
     );
 
     return (
-        <div className="max-w-2xl mx-auto py-10 px-4">
-             <Link href="/student/forms" className="inline-flex items-center text-sm text-gray-500 mb-6 hover:text-black">
-                <ArrowLeft className="w-4 h-4 mr-1" /> Back to Forms
-            </Link>
-
-            <Card className="border-t-4 border-t-blue-600 shadow-lg">
-                <CardHeader className="space-y-4 text-center pb-8 border-b bg-gray-50/50">
-                    <CardTitle className="text-3xl">{form.title}</CardTitle>
-                    {form.description && <CardDescription className="text-lg">{form.description}</CardDescription>}
-                </CardHeader>
-                <CardContent className="pt-8 space-y-8">
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        {form.fields && form.fields.map((field: FormField) => (
-                            <div key={field.id} className="space-y-3">
-                                <Label className="text-base font-semibold">
-                                    {field.label} {field.required && <span className="text-red-500">*</span>}
-                                </Label>
-                                
-                                {field.type === "text" && (
-                                    <Input 
-                                        required={field.required}
-                                        placeholder={field.placeholder}
-                                        value={responses[field.id] || ""}
-                                        onChange={(e) => handleInputChange(field.id, e.target.value)}
-                                        className="h-11"
-                                    />
-                                )}
-                                
-                                {field.type === "number" && (
-                                    <Input 
-                                        type="number"
-                                        required={field.required}
-                                        placeholder={field.placeholder}
-                                        value={responses[field.id] || ""}
-                                        onChange={(e) => handleInputChange(field.id, e.target.value)}
-                                        className="h-11"
-                                    />
-                                )}
-
-                                {field.type === "textarea" && (
-                                    <Textarea 
-                                        required={field.required}
-                                        placeholder={field.placeholder}
-                                        value={responses[field.id] || ""}
-                                        onChange={(e) => handleInputChange(field.id, e.target.value)}
-                                        className="min-h-[120px] resize-y"
-                                    />
-                                )}
-
-                                {field.type === "select" && (
-                                     <Select 
-                                        required={field.required} 
-                                        onValueChange={(v) => handleInputChange(field.id, v)}
-                                        value={responses[field.id] || ""}
-                                    >
-                                        <SelectTrigger className="h-11">
-                                            <SelectValue placeholder="Select an option" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {field.options?.map((opt) => (
-                                                <SelectItem key={opt} value={opt}>{opt}</SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                )}
-
-                                 {/* Date, File types can be added similarly */}
-                                 {field.type === "date" && (
-                                    <Input 
-                                        type="date"
-                                        required={field.required}
-                                        value={responses[field.id] || ""}
-                                        onChange={(e) => handleInputChange(field.id, e.target.value)}
-                                        className="h-11"
-                                    />
-                                 )}
-                            </div>
-                        ))}
-
-                        <div className="pt-6">
-                            <Button type="submit" size="lg" className="w-full text-lg h-12" disabled={submitMutation.isPending}>
-                                {submitMutation.isPending && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
-                                Submit Response
-                            </Button>
+        <div className="min-h-screen bg-[#F4F7FB] p-8">
+            <div className="max-w-7xl mx-auto space-y-6">
+                
+                {/* Dashboard-Style Header Bar */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                            <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+                            <span>/</span>
+                            <Link href="/student/forms" className="hover:text-primary transition-colors">Forms</Link>
+                            <span>/</span>
+                            <span className="text-slate-600">Submit Response</span>
                         </div>
-                    </form>
-                </CardContent>
-            </Card>
+                        <h1 className="text-2xl font-bold text-slate-900">Add New Response</h1>
+                    </div>
+                </div>
+
+                {/* Adaptive Two-Column Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    {/* Main Form Column */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <Card className="border-none shadow-sm rounded-xl overflow-hidden">
+                            <CardHeader className="border-b border-slate-100 bg-white py-5">
+                                <CardTitle className="text-lg font-bold text-slate-800">Submission Content</CardTitle>
+                                <CardDescription>Enter the required details for "{form.title}"</CardDescription>
+                            </CardHeader>
+                            <CardContent className="p-6 md:p-8">
+                                <form onSubmit={handleSubmit} className="space-y-8">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                        {form.fields && form.fields.map((field: FormField) => {
+                                            const isFullWidth = field.type === "textarea" || field.type === "file";
+                                            return (
+                                                <div key={field.id} className={`space-y-2 ${isFullWidth ? 'md:col-span-2' : ''}`}>
+                                                    <Label className="text-sm font-bold text-slate-700">
+                                                        {field.label} {field.required && <span className="text-red-500">*</span>}
+                                                    </Label>
+                                                    
+                                                    <div className="space-y-1.5">
+                                                        {field.type === "text" && (
+                                                            <Input 
+                                                                required={field.required}
+                                                                placeholder={field.placeholder || `Enter ${field.label.toLowerCase()}`}
+                                                                value={responses[field.id] || ""}
+                                                                onChange={(e) => handleInputChange(field.id, e.target.value)}
+                                                                className="h-11 border-slate-200 rounded-lg focus-visible:ring-1 focus-visible:ring-primary shadow-none bg-slate-50/30"
+                                                            />
+                                                        )}
+                                                        
+                                                        {field.type === "number" && (
+                                                            <Input 
+                                                                type="number"
+                                                                required={field.required}
+                                                                placeholder={field.placeholder || "0"}
+                                                                value={responses[field.id] || ""}
+                                                                onChange={(e) => handleInputChange(field.id, e.target.value)}
+                                                                className="h-11 border-slate-200 rounded-lg focus-visible:ring-1 focus-visible:ring-primary shadow-none bg-slate-50/30"
+                                                            />
+                                                        )}
+
+                                                        {field.type === "textarea" && (
+                                                            <Textarea 
+                                                                required={field.required}
+                                                                placeholder={field.placeholder || "Provide detailed information..."}
+                                                                value={responses[field.id] || ""}
+                                                                onChange={(e) => handleInputChange(field.id, e.target.value)}
+                                                                className="min-h-[140px] border-slate-200 rounded-lg focus-visible:ring-1 focus-visible:ring-primary shadow-none bg-slate-50/30 resize-none"
+                                                            />
+                                                        )}
+
+                                                        {field.type === "select" && (
+                                                             <Select 
+                                                                required={field.required} 
+                                                                onValueChange={(v) => handleInputChange(field.id, v)}
+                                                                value={responses[field.id] || ""}
+                                                            >
+                                                                <SelectTrigger className="h-11 border-slate-200 rounded-lg focus-visible:ring-1 focus-visible:ring-primary shadow-none bg-slate-50/30">
+                                                                    <SelectValue placeholder={`Select ${field.label.toLowerCase()}`} />
+                                                                </SelectTrigger>
+                                                                <SelectContent className="rounded-xl border-slate-200 shadow-xl">
+                                                                    {field.options?.filter(opt => opt && opt.trim() !== "").map((opt) => (
+                                                                        <SelectItem key={opt} value={opt} className="rounded-lg">{opt}</SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        )}
+
+                                                         {field.type === "date" && (
+                                                            <Input 
+                                                                type="date"
+                                                                required={field.required}
+                                                                value={responses[field.id] || ""}
+                                                                onChange={(e) => handleInputChange(field.id, e.target.value)}
+                                                                className="h-11 border-slate-200 rounded-lg focus-visible:ring-1 focus-visible:ring-primary shadow-none bg-slate-50/30"
+                                                            />
+                                                         )}
+
+                                                         {field.type === "file" && (
+                                                             <label className="flex flex-col items-center justify-center w-full min-h-[140px] border-2 border-dashed border-slate-200 rounded-xl bg-slate-50/50 hover:bg-slate-50 transition-all cursor-pointer group">
+                                                                 <div className="flex flex-col items-center justify-center py-4">
+                                                                     <div className="p-3 bg-white rounded-lg shadow-sm mb-3 group-hover:scale-110 transition-transform border border-slate-100">
+                                                                         <CheckCircle className={`h-6 w-6 ${responses[field.id] ? 'text-green-500' : 'text-slate-400'}`} />
+                                                                     </div>
+                                                                     <p className="text-sm font-bold text-slate-700">
+                                                                         {responses[field.id] ? responses[field.id].name : "Upload File Attachment"}
+                                                                     </p>
+                                                                     <p className="text-[11px] text-slate-400 mt-1 uppercase font-bold tracking-tighter">
+                                                                         {responses[field.id] ? `(${(responses[field.id].size / 1024).toFixed(1)} KB)` : "Assignments, PDF, or Images"}
+                                                                     </p>
+                                                                 </div>
+                                                                 <input 
+                                                                    type="file"
+                                                                    required={field.required && !responses[field.id]}
+                                                                    className="hidden"
+                                                                    onChange={async (e) => {
+                                                                        const file = e.target.files?.[0];
+                                                                        if (file) {
+                                                                            const reader = new FileReader();
+                                                                            reader.onloadend = () => {
+                                                                                handleInputChange(field.id, {
+                                                                                    name: file.name,
+                                                                                    type: file.type,
+                                                                                    size: file.size,
+                                                                                    data: reader.result
+                                                                                });
+                                                                            };
+                                                                            reader.readAsDataURL(file);
+                                                                        }
+                                                                    }}
+                                                                 />
+                                                             </label>
+                                                         )}
+                                                    </div>
+                                                    {field.placeholder && <p className="text-[11px] text-slate-400 font-medium">Example: {field.placeholder}</p>}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    {/* Responsive Action Buttons */}
+                                    <div className="pt-8 border-t border-slate-100 flex flex-col md:flex-row gap-4">
+                                        <Button 
+                                            type="button"
+                                            variant="outline"
+                                            onClick={() => router.push("/student/forms")}
+                                            className="h-11 px-8 border-slate-200 font-bold text-slate-600 rounded-lg hover:bg-slate-50 order-2 md:order-1"
+                                        >
+                                            Cancel
+                                        </Button>
+                                        <Button 
+                                            type="submit" 
+                                            disabled={submitMutation.isPending}
+                                            className="h-11 px-10 font-bold shadow-md rounded-lg flex-1 md:flex-none order-1 md:order-2"
+                                        >
+                                            {submitMutation.isPending && <Loader2 className="mr-2 h-5 w-5 animate-spin" />}
+                                            Create Submission
+                                        </Button>
+                                    </div>
+                                </form>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Sidebar Column */}
+                    <div className="space-y-6">
+                        <Card className="border-none shadow-sm rounded-xl overflow-hidden bg-white">
+                            <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardTitle className="text-sm font-bold text-slate-800 uppercase tracking-wider">Status</CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-6 space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-slate-500">Current Status</span>
+                                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-600 border border-amber-100">Pending Submission</span>
+                                </div>
+                                <div className="flex items-center justify-between">
+                                    <span className="text-sm font-medium text-slate-500">Assigned Date</span>
+                                    <span className="text-sm font-bold text-slate-700">{new Date(form.createdAt).toLocaleDateString()}</span>
+                                </div>
+                                <div className="pt-4 border-t border-slate-50">
+                                    <p className="text-[12px] text-slate-400 leading-relaxed italic">
+                                        Once submitted, your response will be automatically reviewed by the course administrators.
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border-none shadow-sm rounded-xl overflow-hidden bg-white">
+                            <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardTitle className="text-sm font-bold text-slate-800 uppercase tracking-wider">Help & Support</CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-6">
+                                <p className="text-sm text-slate-600 leading-relaxed mb-4">
+                                    Need help with this form? Contact your administrator or check the student guidelines.
+                                </p>
+                                <Button variant="secondary" className="w-full text-xs font-bold uppercase tracking-widest bg-slate-100 hover:bg-slate-200 text-slate-600 border-none">
+                                    View Guidelines
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

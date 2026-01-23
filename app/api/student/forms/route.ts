@@ -13,8 +13,14 @@ export async function GET() {
 
     await dbConnect();
 
-    // 1. Fetch Active Forms
-    const activeForms = await Form.find({ status: "active" }).select("title description createdAt status").sort({ createdAt: -1 });
+    // 1. Fetch Active Forms targeted to this student (or all)
+    const activeForms = await Form.find({ 
+        status: "active",
+        $or: [
+            { assignedStudents: { $size: 0 } }, // Targets all
+            { assignedStudents: session.user.id } // Targeted specifically to this user
+        ]
+    }).select("title description createdAt status").sort({ createdAt: -1 });
 
     // 2. Fetch User's Submissions to check which are done
     const userSubmissions = await Submission.find({ studentId: session.user.id }).select("formId");

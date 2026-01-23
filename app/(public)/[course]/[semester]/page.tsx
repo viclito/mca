@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter, CardDescription } from "@/components/ui/card";
 import { ArrowLeft, BookOpen, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import dbConnect from "@/lib/db";
 import Semester from "@/lib/models/Semester";
 import Subject from "@/lib/models/Subject";
@@ -40,45 +41,114 @@ export default async function SemesterDetailsPage({
   const { semester: semesterData, subjects } = data;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="px-6 py-8 border-b">
-        <div className="max-w-5xl mx-auto">
-          <Link
-            href={`/${course}`}
-            className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-4"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to {course}
-          </Link>
-          <div className="flex items-center gap-4">
-             <h1 className="text-3xl font-bold tracking-tight">{semesterData.name}</h1>
-              <Badge variant="secondary" className="px-3 py-1 font-mono text-xs">
-                 {subjects.length} Subjects
-              </Badge>
+    <div className="min-h-screen bg-[#F4F7FB] p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        
+        {/* Header Bar with Breadcrumbs */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+              <span>/</span>
+              <Link href={`/${course}`} className="hover:text-primary transition-colors uppercase">{course}</Link>
+              <span>/</span>
+              <span className="text-slate-600 uppercase">Semester</span>
+            </div>
+            <h1 className="text-2xl font-bold text-slate-900">{semesterData.name} Overview</h1>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-500">
+            <BookOpen className="h-4 w-4 text-primary" />
+            <span>{subjects.length} Core Subjects</span>
           </div>
         </div>
-      </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-12">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {subjects.map((sub: any) => (
-            <Link key={sub._id.toString()} href={`/${course}/${semester}/${sub.slug}`} className="block group">
-              <Card className="h-full border-border/60 bg-background/80 backdrop-blur-sm transition-all duration-300 hover:bg-background hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1">
-                <CardHeader>
-                  <CardTitle className="flex items-center justify-between text-base group-hover:text-primary transition-colors">
-                    <span>{sub.name}</span>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center text-xs text-muted-foreground">
-                    <BookOpen className="mr-1 h-3 w-3" />
-                    {sub.unitCount} Units
+        {/* Adaptive Two-Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Main Content Column: Subjects */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex items-center gap-2 px-2">
+              <BookOpen className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-bold text-slate-800">Available Subjects</h2>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {subjects.map((sub: any) => (
+                <Link key={sub._id.toString()} href={`/${course}/${semester}/${sub.slug}`} className="block group h-full">
+                  <Card className="h-full border border-slate-200 shadow-none hover:shadow-md transition-all duration-300 bg-white rounded-xl overflow-hidden flex flex-col">
+                    <CardHeader className="p-6 pb-4">
+                      <div className="flex justify-between items-start mb-3">
+                        <div className="p-2.5 rounded-lg bg-primary/5 group-hover:bg-primary transition-colors">
+                          <BookOpen className="h-5 w-5 text-primary group-hover:text-white" />
+                        </div>
+                        <ChevronRight className="h-4 w-4 text-slate-300 group-hover:text-primary transition-colors mt-1" />
+                      </div>
+                      <CardTitle className="text-lg font-bold text-slate-800 group-hover:text-primary transition-colors">
+                        {sub.name}
+                      </CardTitle>
+                      <CardDescription className="text-sm mt-2 text-slate-500 font-medium leading-relaxed">
+                        Access all units, notes, and reference materials for this subject.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pt-0 flex-1">
+                      <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full bg-primary" />
+                          <span className="text-xs font-bold text-slate-700">{sub.unitCount} Study Units</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                    <CardFooter className="p-0">
+                       <div className="w-full bg-slate-50 p-3 text-center border-t border-slate-100">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-primary transition-colors">View Materials</span>
+                       </div>
+                    </CardFooter>
+                  </Card>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          {/* Sidebar Area */}
+          <div className="space-y-6">
+            <Card className="border-none shadow-sm rounded-xl overflow-hidden bg-white">
+              <CardHeader className="border-b border-slate-100 pb-4">
+                <CardTitle className="text-sm font-bold text-slate-800 uppercase tracking-wider">Semester Details</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-4">
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  This semester focuses on advanced subject matters and specialized topics within the {course.toUpperCase()} curriculum.
+                </p>
+                <div className="p-4 bg-slate-50 rounded-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-slate-500">Academic Year</span>
+                    <span className="text-xs font-bold text-slate-700">2025-26</span>
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-slate-500">Evaluation Type</span>
+                    <span className="text-xs font-bold text-slate-700">Semester Pattern</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-none shadow-sm rounded-xl overflow-hidden bg-[#1e293b] text-white">
+              <CardContent className="p-6 space-y-4">
+                <div className="p-3 bg-white/10 rounded-xl w-fit">
+                   <ChevronRight className="h-6 w-6 text-white" />
+                </div>
+                <div className="space-y-2">
+                  <h4 className="font-bold text-lg leading-tight">Exam Schedule</h4>
+                  <p className="text-white/70 text-xs font-medium leading-relaxed">
+                    Check the latest examination portal updates for this semester's finals and internals.
+                  </p>
+                </div>
+                <Button variant="secondary" size="sm" className="w-full font-bold bg-white/10 hover:bg-white/20 text-white border-none mt-2">
+                  View Schedule
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

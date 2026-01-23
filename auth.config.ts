@@ -9,14 +9,26 @@ export const authConfig = {
     authorized({ auth, request: { nextUrl } }) {
       const isLoggedIn = !!auth?.user;
       const isAdminPage = nextUrl.pathname.startsWith("/admin");
+      const isStudentPage = nextUrl.pathname.startsWith("/student") && 
+                           !nextUrl.pathname.startsWith("/student/login") && 
+                           !nextUrl.pathname.startsWith("/student/register");
       
       if (isAdminPage) {
         if (isLoggedIn) {
-             const user = auth.user as any;
-             return user.role === 'admin' || user.role === 'super_admin';
+          const user = auth.user as any;
+          return user.role === 'admin' || user.role === 'super_admin';
         }
-        return false; // Redirect unauthenticated users to login page
+        return false; // Redirect unauthenticated users to login page (default /login)
       }
+
+      if (isStudentPage) {
+        if (isLoggedIn) {
+          return true;
+        }
+        // Manual redirect for student pages to student login
+        return Response.redirect(new URL("/student/login", nextUrl));
+      }
+
       return true;
     },
     async session({ session, token }) {

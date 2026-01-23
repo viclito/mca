@@ -18,6 +18,7 @@ import { useMutation } from "@tanstack/react-query";
 
 export default function RegisterPage() {
   const router = useRouter();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -44,6 +45,7 @@ export default function RegisterPage() {
       setSuccess(
         "Registration successful! Please check your email for approval status (mocked). Wait for admin approval."
       );
+      setName("");
       setEmail("");
       setPassword("");
       setConfirmPassword("");
@@ -63,7 +65,7 @@ export default function RegisterPage() {
       return;
     }
 
-    registerMutation.mutate({ email, password });
+    registerMutation.mutate({ name, email, password });
   }
 
   return (
@@ -88,6 +90,16 @@ export default function RegisterPage() {
           </div>
         ) : (
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Input
+              type="text"
+              placeholder="Full Name"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="bg-white/50 dark:bg-gray-800/50"
+            />
+          </div>
           <div className="space-y-2">
             <Input
               type="email"

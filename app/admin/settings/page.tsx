@@ -1,9 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { User, Bell, Shield } from "lucide-react";
+import { User as UserIcon, Bell, Shield } from "lucide-react";
 import { auth } from "@/auth";
+import AdminSettingsContent from "@/components/AdminSettingsContent";
+import dbConnect from "@/lib/db";
+import User from "@/lib/models/User";
 
 export default async function SettingsPage() {
   const session = await auth();
+  
+  await dbConnect();
+  const dbUser = await User.findById(session?.user?.id).lean();
 
   return (
     <div className="space-y-6">
@@ -14,11 +20,16 @@ export default async function SettingsPage() {
         </p>
       </div>
 
+      <AdminSettingsContent 
+        initialIsStudent={dbUser?.isStudent || false} 
+        userEmail={session?.user?.email || ""} 
+      />
+
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-lg font-semibold">Account Information</CardTitle>
-            <User className="h-5 w-5 text-muted-foreground" />
+            <UserIcon className="h-5 w-5 text-muted-foreground" />
           </CardHeader>
           <CardContent className="space-y-3">
             <div>

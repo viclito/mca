@@ -33,6 +33,12 @@ const FormSchema = new Schema(
       ref: "User",
       required: true,
     },
+    assignedStudents: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
   },
   { timestamps: true }
 );

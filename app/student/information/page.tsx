@@ -6,11 +6,12 @@ import {
   CardContent, 
   CardHeader, 
   CardTitle, 
-  CardDescription 
+  CardDescription,
+  CardFooter
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileSpreadsheet, ArrowRight, Table as TableIcon, Loader2, Info } from "lucide-react";
+import { FileSpreadsheet, ArrowRight, Table as TableIcon, Loader2, Info, CheckCircle, Clock } from "lucide-react";
 import Link from "next/link";
 import { motion, Variants } from "framer-motion";
 
@@ -57,100 +58,140 @@ export default function StudentInformationListPage() {
     },
   });
 
-  if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#F5F5F7] flex flex-col items-center justify-center gap-4">
-        <Loader2 className="h-6 w-6 animate-spin text-black" />
-        <p className="text-gray-500 text-xs font-bold tracking-tight uppercase">Loading Hub...</p>
-      </div>
+        <div className="min-h-screen bg-[#F4F7FB] p-8">
+            <div className="max-w-7xl mx-auto space-y-6">
+                
+                {/* Header Bar with Breadcrumbs */}
+                <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="space-y-1">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                            <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+                            <span>/</span>
+                            <span className="text-slate-600">Information</span>
+                        </div>
+                        <h1 className="text-2xl font-bold text-slate-900">Administrative Resources</h1>
+                    </div>
+                </div>
+
+                {/* Adaptive Two-Column Layout */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    
+                    {/* Main Resources Column */}
+                    <div className="lg:col-span-2 space-y-6">
+                        <div className="flex items-center gap-2 px-2">
+                            <Info className="h-5 w-5 text-primary" />
+                            <h2 className="text-lg font-bold text-slate-800">Shared Data Tables</h2>
+                        </div>
+
+                        {informationList.length === 0 ? (
+                            <div className="bg-white p-12 rounded-xl border border-slate-200 flex flex-col items-center justify-center text-center">
+                                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mb-4 border border-slate-100">
+                                    <FileSpreadsheet className="h-8 w-8 text-slate-300" />
+                                </div>
+                                <h3 className="text-lg font-bold text-slate-800">No resources shared yet</h3>
+                                <p className="text-sm text-slate-500 mt-1 max-w-xs">
+                                    Administrative resources and shared data tables will appear here once they are published.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {informationList.map((info) => (
+                                    <Card key={info._id} className="group border border-slate-200 shadow-none hover:shadow-md transition-all duration-300 bg-white rounded-xl overflow-hidden flex flex-col h-full">
+                                        <CardHeader className="p-6 pb-4">
+                                            <div className="flex justify-between items-start mb-4">
+                                                <div className="p-2.5 rounded-lg bg-primary/5 group-hover:bg-primary transition-colors">
+                                                    <TableIcon className="h-5 w-5 text-primary group-hover:text-white" />
+                                                </div>
+                                                <Badge className="bg-slate-50 text-slate-500 border-slate-200 flex items-center gap-1 font-bold text-[10px] uppercase shadow-none">
+                                                    {info.permissionMode.replace(/-/g, ' ')}
+                                                </Badge>
+                                            </div>
+                                            <CardTitle className="text-lg font-bold text-slate-800 group-hover:text-primary transition-colors">
+                                                {info.title}
+                                            </CardTitle>
+                                            <CardDescription className="line-clamp-2 mt-2 text-slate-500 font-medium leading-relaxed min-h-[40px]">
+                                                {info.description || "Administrative data shared for your reference and action."}
+                                            </CardDescription>
+                                        </CardHeader>
+                                        <CardContent className="p-6 pt-0 flex-1">
+                                            <div className="pt-4 border-t border-slate-50 grid grid-cols-2 gap-4">
+                                                <div className="space-y-0.5">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Structure</p>
+                                                    <p className="text-xs font-bold text-slate-700">{info.columns.length} Columns</p>
+                                                </div>
+                                                <div className="space-y-0.5">
+                                                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest leading-none">Shared On</p>
+                                                    <p className="text-xs font-bold text-slate-700">{new Date(info.createdAt).toLocaleDateString()}</p>
+                                                </div>
+                                            </div>
+                                        </CardContent>
+                                        <CardFooter className="p-6 pt-0">
+                                            <Link href={`/student/information/${info._id}`} className="w-full">
+                                                <Button className="w-full h-10 font-bold shadow-sm rounded-lg group/btn active:scale-[0.98]">
+                                                    Open Table 
+                                                    <ArrowRight className="ml-2 h-3.5 w-3.5 group-hover/btn:translate-x-1 transition-transform" />
+                                                </Button>
+                                            </Link>
+                                        </CardFooter>
+                                    </Card>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Information Sidebar */}
+                    <div className="space-y-6">
+                        <Card className="border-none shadow-sm rounded-xl overflow-hidden bg-white">
+                            <CardHeader className="border-b border-slate-100 pb-4">
+                                <CardTitle className="text-sm font-bold text-slate-800 uppercase tracking-wider">About Resources</CardTitle>
+                            </CardHeader>
+                            <CardContent className="pt-6 space-y-4">
+                                <p className="text-sm text-slate-600 leading-relaxed">
+                                    These tables are provided by the administration to share important data, track progress, or collect specific informational updates.
+                                </p>
+                                <div className="space-y-3 pt-2">
+                                    <div className="flex gap-3">
+                                        <div className="mt-1 p-1 bg-green-50 rounded border border-green-100">
+                                            <CheckCircle className="h-3 w-3 text-green-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-700">View Data</p>
+                                            <p className="text-[11px] text-slate-500 font-medium">Access shared lists and records.</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-3">
+                                        <div className="mt-1 p-1 bg-blue-50 rounded border border-blue-100">
+                                            <Clock className="h-3 w-3 text-blue-600" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-bold text-slate-700">Live Updates</p>
+                                            <p className="text-[11px] text-slate-500 font-medium">Stay updated with administrative changes.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="border-none shadow-sm rounded-xl overflow-hidden bg-gradient-to-br from-[#1e293b] to-[#0f172a] text-white">
+                            <CardContent className="p-6 space-y-4">
+                                <div className="p-3 bg-white/10 rounded-xl w-fit">
+                                    <Info className="h-6 w-6 text-blue-400" />
+                                </div>
+                                <div className="space-y-2">
+                                    <h4 className="font-bold text-lg leading-tight">Usage Guidelines</h4>
+                                    <p className="text-white/70 text-xs font-medium leading-relaxed">
+                                        Some tables may allow direct editing. Please ensure all data entered is accurate and follows institutional policy.
+                                    </p>
+                                </div>
+                                <Button variant="secondary" size="sm" className="w-full font-bold bg-white/10 hover:bg-white/20 text-white border-none mt-2">
+                                    Policy Guidelines
+                                </Button>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </div>
+        </div>
     );
-  }
-
-  return (
-    <div className="min-h-screen bg-[#F5F5F7]">
-      <div className="container py-8 lg:py-12 max-w-6xl mx-auto px-6 space-y-8">
-        
-        {/* Header Section */}
-        <motion.div 
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col gap-3 max-w-2xl"
-        >
-          <div className="flex items-center gap-2 px-2.5 py-0.5 rounded-full bg-gray-200/50 text-gray-600 w-fit backdrop-blur-sm border border-gray-300/30">
-            <Info className="h-3 w-3" />
-            <span className="text-[9px] font-black tracking-[0.2em] uppercase">Information Hub</span>
-          </div>
-          <h1 className="text-3xl md:text-5xl font-bold tracking-tight text-black">
-            Administrative <br className="hidden md:inline" /> Resources
-          </h1>
-          <p className="text-sm md:text-base text-gray-500 font-medium leading-relaxed">
-            Direct access to shared data tables provided by the administration.
-          </p>
-        </motion.div>
-
-        {/* Content Section */}
-        {informationList.length === 0 ? (
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.98 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center justify-center py-20 text-center space-y-4 bg-white/50 rounded-[2rem] border border-gray-200/50 backdrop-blur-xl"
-          >
-            <div className="p-4 rounded-2xl bg-gray-100/50">
-              <FileSpreadsheet className="h-10 w-10 text-gray-300" />
-            </div>
-            <div className="space-y-1">
-              <p className="text-lg font-bold text-gray-900">No resources shared yet</p>
-              <p className="text-xs text-gray-500 max-w-sm">When tables are shared, they will appear here.</p>
-            </div>
-          </motion.div>
-        ) : (
-          <motion.div 
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="grid gap-6 md:grid-cols-2 lg:grid-cols-3"
-          >
-            {informationList.map((info) => (
-              <motion.div key={info._id} variants={item}>
-                <Card className="group hover:shadow-xl transition-all duration-300 rounded-[2rem] border-0 bg-white/80 backdrop-blur-xl shadow-sm overflow-hidden h-full flex flex-col">
-                  <CardHeader className="p-6 pb-2">
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="p-3 rounded-xl bg-gray-50 text-gray-400 group-hover:bg-black group-hover:text-white transition-all duration-300">
-                        <TableIcon className="h-5 w-5" />
-                      </div>
-                      <Badge variant="outline" className="rounded-full px-3 py-0.5 text-[9px] uppercase font-black tracking-widest bg-gray-100/50 border-gray-200/50 text-gray-500 shadow-none">
-                        {info.permissionMode.replace(/-/g, ' ')}
-                      </Badge>
-                    </div>
-                    <CardTitle className="text-lg font-bold tracking-tight text-gray-900 group-hover:text-black transition-colors">
-                      {info.title}
-                    </CardTitle>
-                    <CardDescription className="line-clamp-2 mt-2 text-xs font-medium leading-relaxed text-gray-500">
-                      {info.description || "View relevant administrative data shared with you in this dedicated space."}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="p-6 pt-0 mt-auto">
-                    <div className="flex items-center justify-between pt-6 border-t border-gray-50">
-                      <div className="flex flex-col">
-                        <span className="text-[9px] font-black text-gray-300 uppercase tracking-widest leading-none mb-1">Fields</span>
-                        <span className="text-xs font-bold text-gray-900">
-                          {info.columns.length} Columns
-                        </span>
-                      </div>
-                      <Link href={`/student/information/${info._id}`}>
-                        <Button className="rounded-full bg-black text-white hover:bg-zinc-800 h-10 px-5 text-xs font-bold group/btn shadow-md">
-                          Open Table 
-                          <ArrowRight className="ml-1.5 h-3.5 w-3.5 group-hover/btn:translate-x-1 transition-transform" />
-                        </Button>
-                      </Link>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </motion.div>
-        )}
-      </div>
-    </div>
-  );
 }

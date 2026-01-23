@@ -8,11 +8,11 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
-    const { email, password } = await req.json();
+    const { name, email, password } = await req.json();
 
-    if (!email || !password) {
+    if (!name || !email || !password) {
       return NextResponse.json(
-        { message: "Missing email or password" },
+        { message: "Missing required fields" },
         { status: 400 }
       );
     }
@@ -31,6 +31,7 @@ export async function POST(req: Request) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await User.create({
+      name,
       email,
       password: hashedPassword,
       role: "admin",
@@ -47,6 +48,7 @@ export async function POST(req: Request) {
         subject: "New Admin Registration Request",
         html: `
           <p>A new admin has requested to join.</p>
+          <p><strong>Name:</strong> ${name}</p>
           <p><strong>Email:</strong> ${email}</p>
           <p>Please approve or deny this request in the admin dashboard.</p>
         `,

@@ -19,6 +19,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd"; // using dnd for sorting
+import { Badge } from "@/components/ui/badge";
 
 interface FormField {
   id: string;
@@ -39,10 +40,18 @@ export default function FormBuilderPage() {
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState<"draft" | "active" | "closed">("draft");
   const [fields, setFields] = useState<FormField[]>([]);
+  const [assignedStudents, setAssignedStudents] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [availableStudents, setAvailableStudents] = useState<any[]>([]);
+  const [studentSearch, setStudentSearch] = useState("");
 
   // Fetch Logic if editing an existing form
   useEffect(() => {
+    // Fetch available students
+    fetch("/api/admin/students/eligible")
+      .then(res => res.json())
+      .then(data => setAvailableStudents(data));
+
     if (formId) {
       setLoading(true);
       fetch("/api/admin/forms")
@@ -54,6 +63,7 @@ export default function FormBuilderPage() {
             setDescription(form.description);
             setStatus(form.status);
             setFields(form.fields || []);
+            setAssignedStudents(form.assignedStudents || []);
           }
            setLoading(false);
         });
@@ -63,22 +73,18 @@ export default function FormBuilderPage() {
   const saveMutation = useMutation({
     mutationFn: async (data: any) => {
       const method = formId ? "PUT" : "POST";
-      const payload = { ...data, id: formId, createdBy: "ADMIN_ID_PLACEHOLDER" }; // Backend handles createdBy for new, ignores for update usually, but we need session user actually on server or client. 
-      // For now we rely on backend to not require createdBy on update, or we pass it.
-      // But wait, the POST requires createdBy. We need the current user ID. 
-      // Since this is client side, we might need to get session. 
-      // Actually, relying on backend to extract user from session is cleaner, 
-      // but the current API expects it in body. I'll pass a placeholder and fix API to use session if needed, 
-      // or assume the user session is handled. 
-      // Actually, let's fetch session or just pass "admin" for now if auth is loose, 
-      // but real app needs session.
+      const payload = { ...data, id: formId }; 
       
       const res = await fetch("/api/admin/forms", {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error("Failed to save form");
+
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({ error: "Failed to save form" }));
+        throw new Error(errData.error || "Failed to save form");
+      }
       return res.json();
     },
     onSuccess: () => {
@@ -123,20 +129,6 @@ export default function FormBuilderPage() {
   // For now I will assume the API (from step 309) requires `createdBy` in body for POST.
   // I will fetch the session user to pass it.
   
-  // Using a simplified save for now
-  const handleSave = () => {
-    // We need a user ID. Quick hack: fetch valid user from /api/auth/session or similar?
-    // Or update API to use server session.
-    // I'll update the API to use auth() in a separate step if strictly needed,
-    // but typically we pass the user ID from the client if we trust the client (not secure, but for internal admin tool ok-ish for prototype).
-    // BETTER: Use useSession() here.
-    
-    // I'll add useSession hook at top.
-    saveMutation.mutate({ title, description, status, fields, createdBy: "67534d0b0b8c459639556cee" }); // Hardcoded for now or fetched
-  };
-
-  // Wait, I should really use useSession.
-  const { data: session } = useQuery({ queryKey: ['session'], queryFn: () => fetch('/api/auth/session').then(res => res.json()) }); // Simple fetch if no provider
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-20">
@@ -154,7 +146,7 @@ export default function FormBuilderPage() {
             description, 
             status, 
             fields, 
-            createdBy: session?.user?.id || "admin_fallback" 
+            assignedStudents
         })} disabled={saveMutation.isPending || !title}>
           {saveMutation.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           Save Form
@@ -190,6 +182,85 @@ export default function FormBuilderPage() {
                         </SelectContent>
                     </Select>
                 </div>
+            </CardContent>
+           </Card>
+
+           <Card>
+            <CardHeader>
+                <CardTitle className="text-sm">Target Students</CardTitle>
+                <p className="text-[10px] text-muted-foreground">Select specific students or leave empty for all.</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+                <Input 
+                    placeholder="Search students..." 
+                    value={studentSearch} 
+                    onChange={(e) => setStudentSearch(e.target.value)}
+                    className="h-8 text-xs"
+                />
+                
+                <div className="max-h-[300px] overflow-y-auto space-y-2 border rounded-md p-2">
+                    {availableStudents
+                        .filter(s => 
+                            (s.name?.toLowerCase() || "").includes(studentSearch.toLowerCase()) || 
+                            (s.email?.toLowerCase() || "").includes(studentSearch.toLowerCase())
+                        )
+                        .map(student => (
+                            <div key={student._id} className="flex items-center space-x-2">
+                                <input 
+                                    type="checkbox"
+                                    id={student._id}
+                                    checked={assignedStudents.includes(student._id)}
+                                    onChange={(e) => {
+                                        if (e.target.checked) {
+                                            setAssignedStudents([...assignedStudents, student._id]);
+                                        } else {
+                                            setAssignedStudents(assignedStudents.filter(id => id !== student._id));
+                                        }
+                                    }}
+                                    className="h-3 w-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                                />
+                                <label htmlFor={student._id} className="text-xs truncate cursor-pointer select-none">
+                                    {student.name}
+                                </label>
+                            </div>
+                        ))}
+                </div>
+
+                {assignedStudents.length > 0 && (
+                    <div className="pt-2 border-t">
+                        <Label className="text-[10px] uppercase font-bold text-muted-foreground">Selected ({assignedStudents.length})</Label>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                            {assignedStudents.map(id => {
+                                const student = availableStudents.find(s => s._id === id);
+                                if (!student) return null;
+                                return (
+                                    <Badge key={id} variant="secondary" className="text-[9px] px-1 py-0 h-4">
+                                        {student.name ? student.name.split(' ')[0] : student.email?.split('@')[0] || "Unnamed"}
+                                        <button 
+                                            onClick={() => setAssignedStudents(assignedStudents.filter(sid => sid !== id))}
+                                            className="ml-1 hover:text-red-500"
+                                        >
+                                            ×
+                                        </button>
+                                    </Badge>
+                                );
+                            })}
+                        </div>
+                        <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="text-[10px] h-6 px-0 mt-2 text-red-500 hover:text-red-600 hover:bg-transparent"
+                            onClick={() => setAssignedStudents([])}
+                        >
+                            Clear Selection (Target All)
+                        </Button>
+                    </div>
+                )}
+                {assignedStudents.length === 0 && (
+                     <div className="p-2 bg-blue-50 text-blue-700 rounded text-[10px] font-medium text-center">
+                        Visible to all students.
+                    </div>
+                )}
             </CardContent>
            </Card>
         </div>
@@ -250,7 +321,7 @@ export default function FormBuilderPage() {
                                                         <Label className="text-xs">Options (Reference Only - Comma separated)</Label>
                                                         <Input 
                                                             value={field.options?.join(", ") || ""} 
-                                                            onChange={(e) => updateField(index, "options", e.target.value.split(",").map(s => s.trim()))} 
+                                                            onChange={(e) => updateField(index, "options", e.target.value.split(",").map(s => s.trim()).filter(s => s !== ""))} 
                                                             placeholder="Option 1, Option 2, Option 3"
                                                             className="h-8 text-xs"
                                                         />

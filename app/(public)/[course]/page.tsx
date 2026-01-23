@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { ArrowLeft, BookOpen, Layers, GraduationCap } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import dbConnect from "@/lib/db";
 import Degree from "@/lib/models/Degree";
 import Semester from "@/lib/models/Semester";
@@ -46,62 +47,117 @@ export default async function SemesterPage({ params }: PageProps) {
   const { degree, semesters } = data;
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
-       {/* Sticky Header */}
-       <div className="px-6 py-6 border-b bg-background sticky top-14 md:top-0 z-20">
-         <div className="max-w-5xl mx-auto w-full">
-            <Link href="/" className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-4">
-                 <ArrowLeft className="mr-2 h-4 w-4" />
-                 Back to Home
-            </Link>
-            <div className="flex flex-col gap-2 animate-in fade-in slide-in-from-bottom-4 duration-500">
-               <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs font-medium text-primary w-fit">
-                  <GraduationCap className="h-3 w-3" />
-                  <span>Masters Program</span>
-               </div>
-               <h1 className="text-3xl font-bold tracking-tight">{degree.name}</h1>
-               <p className="text-sm text-muted-foreground max-w-2xl">
-                 Select your current semester to access tailored study materials and resources.
-               </p>
+    <div className="min-h-screen bg-[#F4F7FB] p-8">
+      <div className="max-w-7xl mx-auto space-y-6">
+        
+        {/* Header Bar with Breadcrumbs */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+              <Link href="/" className="hover:text-primary transition-colors">Home</Link>
+              <span>/</span>
+              <span className="text-slate-600">Curriculum</span>
             </div>
-         </div>
-       </div>
+            <h1 className="text-2xl font-bold text-slate-900">{degree.name}</h1>
+          </div>
+          <div className="inline-flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-500">
+            <GraduationCap className="h-4 w-4 text-primary" />
+            <span>Masters Program</span>
+          </div>
+        </div>
 
-      {/* Content Area */}
-      <div className="flex-1 bg-muted/20 px-6 py-8">
-         <div className="max-w-5xl mx-auto w-full animate-in fade-in slide-in-from-bottom-8 duration-700 delay-100">
-             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-2">
-                {semesters.map((sem: any) => {
-                  // Extract semester number from name (e.g., "Semester 2" -> "2")
-                  const semesterNumber = sem.name.match(/\d+/)?.[0] || sem.slug.match(/\d+/)?.[0] || "1";
-                  
-                  return (
-                    <Link key={sem._id.toString()} href={`/${course}/${sem.slug}`} className="block group">
-                        <Card className="h-full border-border/60 bg-background/80 backdrop-blur-sm transition-all duration-300 hover:bg-background hover:shadow-xl hover:shadow-primary/5 hover:-translate-y-1 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 p-3 opacity-5 group-hover:opacity-10 transition-opacity">
-                                <Layers className="h-16 w-16 -mr-4 -mt-4 text-primary" />
-                            </div>
-                            <CardHeader className="flex flex-row items-center justify-between pb-2">
-                               <Badge variant="outline" className="font-mono text-xs border-primary/10 text-primary/80 bg-primary/5">
-                                  SEMESTER {semesterNumber}
-                               </Badge>
-                            </CardHeader>
-                            <CardContent className="pt-3">
-                                 <CardTitle className="text-xl font-bold group-hover:text-primary transition-colors mb-1">{sem.name}</CardTitle>
-                                 <CardDescription className="text-sm mb-4">Explore subjects and resources for this semester.</CardDescription>
-                                 <div className="flex items-center gap-3">
-                                    <Badge variant="secondary" className="px-3 py-1 bg-secondary/50 font-normal group-hover:bg-secondary transition-colors">
-                                        <BookOpen className="mr-1.5 h-3 w-3 text-muted-foreground group-hover:text-primary" />
-                                        {sem.subjectCount} Subjects
-                                    </Badge>
-                                 </div>
-                            </CardContent>
-                        </Card>
-                    </Link>
-                  );
-                })}
+        {/* Adaptive Two-Column Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          
+          {/* Main Content Column: Semesters */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="flex items-center gap-2 px-2">
+              <Layers className="h-5 w-5 text-primary" />
+              <h2 className="text-lg font-bold text-slate-800">Academic Semesters</h2>
             </div>
-         </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {semesters.map((sem: any) => {
+                const semesterNumber = sem.name.match(/\d+/)?.[0] || sem.slug.match(/\d+/)?.[0] || "1";
+                
+                return (
+                  <Link key={sem._id.toString()} href={`/${course}/${sem.slug}`} className="block group h-full">
+                    <Card className="h-full border border-slate-200 shadow-none hover:shadow-md transition-all duration-300 bg-white rounded-xl overflow-hidden flex flex-col">
+                      <CardHeader className="pb-4">
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="p-2.5 rounded-lg bg-primary/5 group-hover:bg-primary transition-colors">
+                            <Layers className="h-5 w-5 text-primary group-hover:text-white" />
+                          </div>
+                          <Badge className="bg-slate-50 text-slate-500 border-slate-200 flex items-center gap-1 font-bold text-[10px] uppercase shadow-none">
+                            Semester {semesterNumber}
+                          </Badge>
+                        </div>
+                        <CardTitle className="text-xl font-bold text-slate-800 group-hover:text-primary transition-colors">
+                          {sem.name}
+                        </CardTitle>
+                        <CardDescription className="text-sm mt-2 text-slate-500 font-medium leading-relaxed">
+                          Comprehensive study materials and core subjects for this term.
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-0 flex-1">
+                        <div className="pt-4 border-t border-slate-50 flex items-center gap-4">
+                          <div className="flex items-center gap-2">
+                            <BookOpen className="h-3.5 w-3.5 text-primary" />
+                            <span className="text-xs font-bold text-slate-700">{sem.subjectCount} Subjects</span>
+                          </div>
+                        </div>
+                      </CardContent>
+                      <CardFooter className="p-0">
+                         <div className="w-full bg-slate-50 p-3 text-center border-t border-slate-100">
+                            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest group-hover:text-primary transition-colors">Explore Curriculum</span>
+                         </div>
+                      </CardFooter>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Sidebar Area */}
+          <div className="space-y-6">
+            <Card className="border-none shadow-sm rounded-xl overflow-hidden bg-white">
+              <CardHeader className="border-b border-slate-100 pb-4">
+                <CardTitle className="text-sm font-bold text-slate-800 uppercase tracking-wider">Course Overview</CardTitle>
+              </CardHeader>
+              <CardContent className="pt-6 space-y-4">
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  The {degree.name} program is designed to provide advanced knowledge and practical training in modern computing concepts and applications.
+                </p>
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-500">Duration</span>
+                    <span className="text-sm font-bold text-slate-700">2 Years</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-slate-500">Total Semesters</span>
+                    <span className="text-sm font-bold text-slate-700">{semesters.length}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="bg-gradient-to-br from-primary to-primary/80 rounded-xl shadow-lg p-6 text-white overflow-hidden relative group">
+              <div className="relative z-10 space-y-3">
+                <h4 className="font-bold text-lg leading-tight">Academic Support</h4>
+                <p className="text-white/80 text-xs font-medium leading-relaxed">
+                  Access the complete academic calendar and department guidelines for this academic session.
+                </p>
+                <Button variant="secondary" size="sm" className="w-full font-bold bg-white text-primary border-none hover:bg-slate-100 mt-2">
+                  Download Prospectus
+                </Button>
+              </div>
+              <div className="absolute -right-4 -bottom-4 opacity-10 group-hover:scale-110 transition-transform">
+                <GraduationCap className="h-24 w-24" />
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
