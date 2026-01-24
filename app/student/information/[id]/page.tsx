@@ -172,23 +172,30 @@ export default function StudentInformationDetailPage() {
 
     setUploading(true);
     try {
-      const formData = new FormData();
+      const uploadedUrls: string[] = [];
+
       for (let i = 0; i < files.length; i++) {
+        const formData = new FormData();
         formData.append("file", files[i]);
+
+        const res = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+
+        const result = await res.json().catch(() => ({}));
+        
+        if (!res.ok) {
+          throw new Error(result.message || "Upload failed");
+        }
+        
+        uploadedUrls.push(result.url);
       }
 
-      const res = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!res.ok) throw new Error("Upload failed");
-      const result = await res.json();
-      const url = result.url;
-      setProofImages([...proofImages, url]);
-    } catch (error) {
+      setProofImages([...proofImages, ...uploadedUrls]);
+    } catch (error: any) {
       console.error(error);
-      alert("Failed to upload image");
+      alert(error.message || "Failed to upload image");
     } finally {
       setUploading(false);
     }
