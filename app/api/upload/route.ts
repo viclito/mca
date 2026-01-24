@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { put } from "@vercel/blob";
 
 export async function POST(request: Request) {
   try {
@@ -11,28 +10,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, message: "No file uploaded" }, { status: 400 });
     }
 
-    const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
-
-    // Create uploads directory if it doesn't exist
-    const uploadDir = path.join(process.cwd(), "public/uploads");
-    try {
-        await mkdir(uploadDir, { recursive: true });
-    } catch (e) {
-        // Ignore if exists
-    }
-
     // Generate unique filename
     const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const extension = path.extname(file.name);
-    const filename = `notification-${uniqueSuffix}${extension}`;
-    const filepath = path.join(uploadDir, filename);
+    const filename = `notification-${uniqueSuffix}-${file.name}`;
 
-    await writeFile(filepath, buffer);
+    // Upload to Vercel Blob
+    const blob = await put(filename, file, {
+      access: "public",
+    });
 
-    const fileUrl = `/uploads/${filename}`;
-
-    return NextResponse.json({ success: true, url: fileUrl });
+    return NextResponse.json({ success: true, url: blob.url });
   } catch (error) {
     console.error("Upload error:", error);
     return NextResponse.json({ success: false, message: "Upload failed" }, { status: 500 });
