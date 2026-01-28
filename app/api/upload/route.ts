@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { put } from "@vercel/blob";
+import { uploadFile } from "@/lib/storage";
 
 export async function POST(request: Request) {
   try {
@@ -13,34 +13,28 @@ export async function POST(request: Request) {
 
     const fileObject = file as File;
 
-    // Check if BLOB_READ_WRITE_TOKEN is present
-    if (!process.env.BLOB_READ_WRITE_TOKEN) {
-      console.error("CRITICAL: BLOB_READ_WRITE_TOKEN is missing from environment variables");
-      return NextResponse.json({ 
-        success: false, 
-        message: "Server configuration error: Upload storage token is missing. Please check Vercel environment variables." 
-      }, { status: 500 });
-    }
-
     console.log(`Starting upload for file: ${fileObject.name}, size: ${fileObject.size} bytes`);
 
-    // Generate unique filename
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    const filename = `notification-${uniqueSuffix}-${fileObject.name}`;
+    // Use the abstraction layer for upload
+    const result = await uploadFile(fileObject);
 
-    // Upload to Vercel Blob
-    const blob = await put(filename, fileObject, {
-      access: "public",
-    });
+    console.log(`Upload successful via ${result.provider}. URL: ${result.url}`);
 
-    console.log(`Upload successful. URL: ${blob.url}`);
-
-    return NextResponse.json({ success: true, url: blob.url });
+    return NextResponse.json({ success: true, url: result.url, provider: result.provider });
   } catch (error: any) {
     console.error("Upload error details:", error);
+    
+    // Customize error message based on common issues
+    let errorMessage = "Upload failed: " + (error.message || "Unknown error");
+    if (error.message?.includes("BLOB_READ_WRITE_TOKEN")) {
+      errorMessage = "Server configuration error: Vercel Blob token is missing.";
+    } else if (error.message?.includes("Cloudinary credentials")) {
+      errorMessage = "Server configuration error: Cloudinary credentials are missing.";
+    }
+
     return NextResponse.json({ 
       success: false, 
-      message: "Upload failed: " + (error.message || "Unknown error")
+      message: errorMessage
     }, { status: 500 });
   }
 }
