@@ -5,9 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
-import { BookOpen, ChevronRight, GraduationCap, Info, Layers, LogOut, FileText, FileSpreadsheet } from "lucide-react";
+import { BookOpen, ChevronRight, GraduationCap, Info, Layers, LogOut, LogIn, FileText, FileSpreadsheet } from "lucide-react";
 import { User } from "next-auth";
 import { signOut } from "next-auth/react";
+import { Button } from "@/components/ui/button";
 
 interface NavigationData {
   id: string;
@@ -170,8 +171,8 @@ export function AppSidebarClient({ courses, user }: { courses: NavigationData[];
                     href="/about"
                     className="flex items-center gap-2 text-[11px] font-medium text-muted-foreground hover:text-foreground hover:underline"
                  >
-                    <Info className="h-3 w-3" />
-                    About
+                    <Info className="h-3.5 w-3.5" />
+                    About Hub
                  </Link>
 
                  <div className="h-px bg-border/40 w-full" />
@@ -191,12 +192,17 @@ export function AppSidebarClient({ courses, user }: { courses: NavigationData[];
                          </button>
                      </div>
                  ) : (
-                    <div className="space-y-3">
-                     <div>
+                    <div className="space-y-4">
+                      <Link href="/student/login" className="block">
+                        <Button variant="default" className="w-full h-9 rounded-lg text-xs font-semibold bg-zinc-900 text-white dark:bg-zinc-100 dark:text-zinc-900 shadow-sm hover:opacity-90">
+                           <LogIn className="h-3.5 w-3.5 mr-2" />
+                           Sign In
+                        </Button>
+                      </Link>
+                      <div>
                         <h5 className="text-xs font-semibold mb-1">Need Help?</h5>
                         <p className="text-[11px] text-muted-foreground">Contact support if you find any missing notes.</p>
-                     </div>
-                     <button className="text-[11px] font-medium text-primary hover:underline block">Contact Support</button>
+                      </div>
                     </div>
                  )}
              </div>

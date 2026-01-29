@@ -20,6 +20,7 @@ import {
   SheetClose
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Loader2, Trash, Pencil, FileText, Video as VideoIcon, Filter, X } from "lucide-react";
 import { useDegrees, Degree } from "@/hooks/admin/use-degrees";
 import { useSemesters, Semester } from "@/hooks/admin/use-semesters";
@@ -139,6 +140,20 @@ export default function ContentPage() {
       }
     );
   }
+
+  const activeFiltersCount = [
+    selectedFilterDegree !== "all",
+    selectedFilterSemester !== "all",
+    selectedFilterSubject !== "all",
+    selectedFilterUnit !== "all"
+  ].filter(Boolean).length;
+
+  const clearFilters = () => {
+    setSelectedFilterDegree("all");
+    setSelectedFilterSemester("all");
+    setSelectedFilterSubject("all");
+    setSelectedFilterUnit("all");
+  };
 
   function handleUpdate() {
     if (!editingContent || !editTitle || !editUrl || !editUnitId) return;
@@ -396,114 +411,151 @@ export default function ContentPage() {
       </div>
 
       {/* Filters */}
-      <Card>
-        <CardHeader className="pb-3">
+      <Card className="border-slate-200 shadow-sm overflow-hidden">
+        <CardHeader className="pb-3 bg-slate-50/50">
             <div className="flex items-center justify-between">
-                <CardTitle className="text-lg font-medium flex items-center gap-2">
-                    <Filter className="h-4 w-4" /> Filter Content
+                <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                    <Filter className="h-4 w-4 text-blue-600" /> 
+                    <span>Filter Content</span>
+                    {activeFiltersCount > 0 && (
+                        <Badge variant="secondary" className="ml-2 bg-blue-100 text-blue-700 border-blue-200">
+                            {activeFiltersCount}
+                        </Badge>
+                    )}
                 </CardTitle>
-                {selectedFilterDegree !== "all" && (
-                    <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="h-8 text-muted-foreground hover:text-foreground"
-                        onClick={() => {
-                            setSelectedFilterDegree("all");
-                            setSelectedFilterSemester("all");
-                            setSelectedFilterSubject("all");
-                            setSelectedFilterUnit("all");
-                        }}
-                    >
-                        <X className="mr-2 h-3 w-3" /> Clear Filters
-                    </Button>
-                )}
+                <div className="flex items-center gap-2">
+                    {activeFiltersCount > 0 && (
+                        <Button 
+                            variant="ghost" 
+                            size="sm"
+                            className="h-8 text-muted-foreground hover:text-foreground hidden sm:flex"
+                            onClick={clearFilters}
+                        >
+                            <X className="mr-2 h-3 w-3" /> Clear
+                        </Button>
+                    )}
+                    
+                    {/* Mobile Filter Trigger */}
+                    <Sheet>
+                        <SheetTrigger asChild>
+                            <Button variant="outline" size="sm" className="sm:hidden h-9">
+                                <Filter className="mr-2 h-4 w-4" /> Filters
+                            </Button>
+                        </SheetTrigger>
+                        <SheetContent side="bottom" className="h-[80vh] rounded-t-[20px]">
+                            <SheetHeader className="text-left">
+                                <SheetTitle>Filters</SheetTitle>
+                                <SheetDescription>Refine the content list</SheetDescription>
+                            </SheetHeader>
+                            <div className="py-6 space-y-6">
+                                <FilterSection 
+                                    label="Degree" 
+                                    value={selectedFilterDegree} 
+                                    onValueChange={(val) => {
+                                        setSelectedFilterDegree(val);
+                                        setSelectedFilterSemester("all");
+                                        setSelectedFilterSubject("all");
+                                        setSelectedFilterUnit("all");
+                                    }}
+                                    options={degrees}
+                                    placeholder="All Degrees"
+                                    allValue="All Degrees"
+                                />
+                                <FilterSection 
+                                    label="Semester" 
+                                    value={selectedFilterSemester} 
+                                    onValueChange={(val) => {
+                                        setSelectedFilterSemester(val);
+                                        setSelectedFilterSubject("all");
+                                        setSelectedFilterUnit("all");
+                                    }}
+                                    options={filteredSemesters}
+                                    placeholder="All Semesters"
+                                    allValue="All Semesters"
+                                    disabled={selectedFilterDegree === "all"}
+                                />
+                                <FilterSection 
+                                    label="Subject" 
+                                    value={selectedFilterSubject} 
+                                    onValueChange={(val) => {
+                                        setSelectedFilterSubject(val);
+                                        setSelectedFilterUnit("all");
+                                    }}
+                                    placeholder="All Subjects"
+                                    allValue="All Subjects"
+                                    options={filteredSubjects}
+                                    disabled={selectedFilterSemester === "all"}
+                                />
+                                <FilterSection 
+                                    label="Unit" 
+                                    value={selectedFilterUnit} 
+                                    onValueChange={setSelectedFilterUnit}
+                                    placeholder="All Units"
+                                    allValue="All Units"
+                                    options={filteredUnits}
+                                    disabled={selectedFilterSubject === "all"}
+                                />
+                            </div>
+                            <SheetFooter className="pt-4 flex-row gap-2 pb-8">
+                                <Button variant="outline" className="flex-1" onClick={clearFilters}>Clear All</Button>
+                                <SheetClose asChild>
+                                    <Button className="flex-1">Apply Filters</Button>
+                                </SheetClose>
+                            </SheetFooter>
+                        </SheetContent>
+                    </Sheet>
+                </div>
             </div>
         </CardHeader>
-        <CardContent>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Degree</label>
-                    <Select 
-                        value={selectedFilterDegree} 
-                        onValueChange={(val) => {
-                            setSelectedFilterDegree(val);
-                            setSelectedFilterSemester("all");
-                            setSelectedFilterSubject("all");
-                            setSelectedFilterUnit("all");
-                        }}
-                    >
-                    <SelectTrigger>
-                        <SelectValue placeholder="All Degrees" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Degrees</SelectItem>
-                        {degrees.map((d) => (
-                        <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Semester</label>
-                    <Select 
-                        value={selectedFilterSemester} 
-                        onValueChange={(val) => {
-                            setSelectedFilterSemester(val);
-                            setSelectedFilterSubject("all");
-                            setSelectedFilterUnit("all");
-                        }} 
-                        disabled={selectedFilterDegree === "all"}
-                    >
-                    <SelectTrigger>
-                        <SelectValue placeholder="All Semesters" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Semesters</SelectItem>
-                        {filteredSemesters.map((s: Semester) => (
-                        <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Subject</label>
-                    <Select 
-                        value={selectedFilterSubject} 
-                        onValueChange={(val) => {
-                            setSelectedFilterSubject(val);
-                            setSelectedFilterUnit("all");
-                        }} 
-                        disabled={selectedFilterSemester === "all"}
-                    >
-                    <SelectTrigger>
-                        <SelectValue placeholder="All Subjects" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Subjects</SelectItem>
-                        {filteredSubjects.map((s: Subject) => (
-                        <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                </div>
-                <div className="space-y-1">
-                    <label className="text-xs font-medium text-muted-foreground">Unit</label>
-                    <Select 
-                        value={selectedFilterUnit} 
-                        onValueChange={setSelectedFilterUnit} 
-                        disabled={selectedFilterSubject === "all"}
-                    >
-                    <SelectTrigger>
-                        <SelectValue placeholder="All Units" />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="all">All Units</SelectItem>
-                        {filteredUnits.map((u: Unit) => (
-                        <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>
-                        ))}
-                    </SelectContent>
-                    </Select>
-                </div>
+        <CardContent className="hidden sm:block pt-6">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                <FilterSection 
+                    label="Degree" 
+                    value={selectedFilterDegree} 
+                    onValueChange={(val) => {
+                        setSelectedFilterDegree(val);
+                        setSelectedFilterSemester("all");
+                        setSelectedFilterSubject("all");
+                        setSelectedFilterUnit("all");
+                    }}
+                    options={degrees}
+                    placeholder="All Degrees"
+                    allValue="All Degrees"
+                />
+                <FilterSection 
+                    label="Semester" 
+                    value={selectedFilterSemester} 
+                    onValueChange={(val) => {
+                        setSelectedFilterSemester(val);
+                        setSelectedFilterSubject("all");
+                        setSelectedFilterUnit("all");
+                    }}
+                    options={filteredSemesters}
+                    placeholder="All Semesters"
+                    allValue="All Semesters"
+                    disabled={selectedFilterDegree === "all"}
+                />
+                <FilterSection 
+                    label="Subject" 
+                    value={selectedFilterSubject} 
+                    onValueChange={(val) => {
+                        setSelectedFilterSubject(val);
+                        setSelectedFilterUnit("all");
+                    }}
+                    placeholder="All Subjects"
+                    allValue="All Subjects"
+                    options={filteredSubjects}
+                    disabled={selectedFilterSemester === "all"}
+                />
+                <FilterSection 
+                    label="Unit" 
+                    value={selectedFilterUnit} 
+                    onValueChange={setSelectedFilterUnit}
+                    placeholder="All Units"
+                    allValue="All Units"
+                    options={filteredUnits}
+                    disabled={selectedFilterSubject === "all"}
+                />
             </div>
         </CardContent>
       </Card>
@@ -561,4 +613,43 @@ export default function ContentPage() {
       </div>
     </div>
   );
+}
+
+function FilterSection({ 
+    label, 
+    value, 
+    onValueChange, 
+    options, 
+    disabled, 
+    placeholder,
+    allValue 
+}: { 
+    label: string, 
+    value: string, 
+    onValueChange: (val: string) => void, 
+    options: any[], 
+    disabled?: boolean,
+    placeholder: string,
+    allValue: string
+}) {
+    return (
+        <div className="space-y-1.5 flex-1">
+            <label className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider ml-1">{label}</label>
+            <Select 
+                value={value} 
+                onValueChange={onValueChange} 
+                disabled={disabled}
+            >
+                <SelectTrigger className="h-10 bg-white border-slate-200">
+                    <SelectValue placeholder={placeholder} />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">{allValue}</SelectItem>
+                    {options.map((opt) => (
+                        <SelectItem key={opt._id} value={opt._id}>{opt.name}</SelectItem>
+                    ))}
+                </SelectContent>
+            </Select>
+        </div>
+    );
 }

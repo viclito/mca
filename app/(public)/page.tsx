@@ -199,8 +199,8 @@ export default function Home() {
         </DialogContent>
       </Dialog>
 
-      <div className="hidden md:block bg-white/70 backdrop-blur-xl border-b border-white/20 fixed top-0 w-full z-50 transition-all duration-200">
-        <div className="max-w-[980px] mx-auto flex items-center justify-between h-12 px-6">
+      <div className="hidden md:block bg-white/70 backdrop-blur-xl border-b border-slate-100 sticky top-0 w-full z-40 transition-all duration-200">
+        <div className="max-w-7xl mx-auto flex items-center justify-between h-12 px-6">
              <div className="flex items-center gap-2">
                 <GraduationCap className="h-5 w-5 text-black" />
                 <span className="font-semibold text-sm tracking-tight text-black">
