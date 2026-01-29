@@ -21,113 +21,56 @@ import {
 } from "@/components/ui/sheet";
 import { Plus, Loader2, Trash, Pencil } from "lucide-react";
 import { format } from "date-fns";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-interface Degree {
-  _id: string;
-  name: string;
-  slug: string;
-  createdAt: string;
-}
+import { useDegrees, useCreateDegree, useUpdateDegree, useDeleteDegree, Degree } from "@/hooks/admin/use-degrees";
 
 export default function DegreesPage() {
-  const [isCreating, setIsCreating] = useState(false);
   const [newDegreeName, setNewDegreeName] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
   const [editingDegree, setEditingDegree] = useState<Degree | null>(null);
   const [editName, setEditName] = useState("");
 
-  const queryClient = useQueryClient();
-
-  // Fetch Degrees
-  const { data: degrees = [], isLoading } = useQuery<Degree[]>({
-    queryKey: ["degrees"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/degrees");
-      if (!res.ok) throw new Error("Failed to fetch degrees");
-      return res.json();
-    },
-  });
-
-  // Create Degree
-  const createMutation = useMutation({
-    mutationFn: async (name: string) => {
-      const res = await fetch("/api/admin/degrees", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name }),
-      });
-      if (!res.ok) throw new Error("Failed to create degree");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["degrees"] });
-      setNewDegreeName("");
-      setIsCreating(false);
-    },
-    onError: () => {
-      alert("Failed to create degree");
-      setIsCreating(false);
-    },
-  });
-
-  // Update Degree
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, name }: { id: string; name: string }) => {
-      const res = await fetch("/api/admin/degrees", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, name }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to update degree");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["degrees"] });
-      setEditingDegree(null);
-    },
-    onError: (error) => {
-      alert(error.message);
-    },
-  });
-
-  // Delete Degree
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/degrees?id=${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete degree");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["degrees"] });
-    },
-    onError: () => {
-      alert("Failed to delete degree");
-    },
-  });
+  const { data: degrees = [], isLoading } = useDegrees();
+  const createMutation = useCreateDegree();
+  const updateMutation = useUpdateDegree();
+  const deleteMutation = useDeleteDegree();
 
   function handleCreate() {
-    if (!newDegreeName) return;
+    if (!newDegreeName.trim()) return;
     setIsCreating(true);
-    createMutation.mutate(newDegreeName);
+    createMutation.mutate(newDegreeName, {
+      onSuccess: () => {
+        setNewDegreeName("");
+        setIsCreating(false);
+      },
+      onError: () => {
+        alert("Failed to create degree");
+        setIsCreating(false);
+      }
+    });
   }
 
   function handleUpdate() {
-    if (!editingDegree || !editName) return;
-    updateMutation.mutate({ id: editingDegree._id, name: editName });
+    if (!editingDegree || !editName.trim()) return;
+    updateMutation.mutate({ id: editingDegree._id, name: editName }, {
+      onSuccess: () => {
+        setEditingDegree(null);
+      },
+      onError: (error) => {
+        alert((error as Error).message);
+      }
+    });
   }
 
   function handleDelete(id: string) {
     if (
       !confirm(
-        "Are you sure you want to delete this degree? This will not delete sub-items but may break references."
+        "Are you sure you want to delete this degree? This will cascade to all related semesters, subjects, and units."
       )
     )
       return;
-    deleteMutation.mutate(id);
+    deleteMutation.mutate(id, {
+      onError: () => alert("Failed to delete degree")
+    });
   }
 
   return (

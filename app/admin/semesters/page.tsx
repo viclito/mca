@@ -21,143 +21,64 @@ import {
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Loader2, Trash, Pencil } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-interface Degree {
-  _id: string;
-  name: string;
-}
-
-interface Semester {
-  _id: string;
-  name: string;
-  slug: string;
-  degreeId: Degree;
-  createdAt: string;
-}
+import { useDegrees, Degree } from "@/hooks/admin/use-degrees";
+import { useSemesters, useCreateSemester, useUpdateSemester, useDeleteSemester, Semester } from "@/hooks/admin/use-semesters";
 
 export default function SemestersPage() {
-  const [isCreating, setIsCreating] = useState(false);
   const [newSemesterName, setNewSemesterName] = useState("");
   const [selectedDegree, setSelectedDegree] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
   const [editingSemester, setEditingSemester] = useState<Semester | null>(null);
   const [editName, setEditName] = useState("");
   const [editDegreeId, setEditDegreeId] = useState("");
 
-  const queryClient = useQueryClient();
-
-  // Fetch Degrees
-  const { data: degrees = [] } = useQuery<Degree[]>({
-    queryKey: ["degrees"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/degrees");
-      if (!res.ok) throw new Error("Failed to fetch degrees");
-      return res.json();
-    },
-  });
-
-  // Fetch Semesters
-  const { data: semesters = [], isLoading: isLoadingSemesters } = useQuery<Semester[]>({
-    queryKey: ["semesters"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/semesters");
-      if (!res.ok) throw new Error("Failed to fetch semesters");
-      return res.json();
-    },
-  });
-
-  // Create Semester
-  const createMutation = useMutation({
-    mutationFn: async ({ name, degreeId }: { name: string; degreeId: string }) => {
-      const res = await fetch("/api/admin/semesters", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, degreeId }),
-      });
-      if (!res.ok) throw new Error("Failed to create semester");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["semesters"] });
-      setNewSemesterName("");
-      setIsCreating(false);
-    },
-    onError: () => {
-      alert("Failed to create semester");
-      setIsCreating(false);
-    },
-  });
-
-  // Update Semester
-  const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      name,
-      degreeId,
-    }: {
-      id: string;
-      name: string;
-      degreeId: string;
-    }) => {
-      const res = await fetch("/api/admin/semesters", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, name, degreeId }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to update semester");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["semesters"] });
-      setEditingSemester(null);
-    },
-    onError: (error) => {
-      alert(error.message);
-    },
-  });
-
-  // Delete Semester
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/semesters?id=${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete semester");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["semesters"] });
-    },
-    onError: () => {
-      alert("Failed to delete semester");
-    },
-  });
+  const { data: degrees = [] } = useDegrees();
+  const { data: semesters = [], isLoading: isLoadingSemesters } = useSemesters();
+  const createMutation = useCreateSemester();
+  const updateMutation = useUpdateSemester();
+  const deleteMutation = useDeleteSemester();
 
   function handleCreate() {
-    if (!newSemesterName || !selectedDegree) return;
+    if (!newSemesterName.trim() || !selectedDegree) return;
     setIsCreating(true);
-    createMutation.mutate({ name: newSemesterName, degreeId: selectedDegree });
+    createMutation.mutate({ name: newSemesterName, degreeId: selectedDegree }, {
+      onSuccess: () => {
+        setNewSemesterName("");
+        setIsCreating(false);
+      },
+      onError: () => {
+        alert("Failed to create semester");
+        setIsCreating(false);
+      }
+    });
   }
 
   function handleUpdate() {
-    if (!editingSemester || !editName || !editDegreeId) return;
+    if (!editingSemester || !editName.trim() || !editDegreeId) return;
     updateMutation.mutate({
       id: editingSemester._id,
       name: editName,
       degreeId: editDegreeId,
+    }, {
+      onSuccess: () => {
+        setEditingSemester(null);
+      },
+      onError: (error) => {
+        alert((error as Error).message);
+      }
     });
   }
 
   function handleDelete(id: string) {
     if (
       !confirm(
-        "Are you sure you want to delete this semester? This will not delete sub-items but may break references."
+        "Are you sure you want to delete this semester? This will cascade to all related subjects and units."
       )
     )
       return;
-    deleteMutation.mutate(id);
+    deleteMutation.mutate(id, {
+      onError: () => alert("Failed to delete semester")
+    });
   }
 
   return (
@@ -276,7 +197,7 @@ export default function SemestersPage() {
                                 onClick={() => {
                                     setEditingSemester(sem);
                                     setEditName(sem.name);
-                                    setEditDegreeId(sem.degreeId?._id || "");
+                                    setEditDegreeId(typeof sem.degreeId === 'string' ? sem.degreeId : sem.degreeId?._id || "");
                                 }}
                             >
                                 <Pencil className="h-4 w-4" />
@@ -292,7 +213,7 @@ export default function SemestersPage() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                         <p className="text-sm font-medium text-foreground/80 mb-2">{sem.degreeId?.name || "Unknown Degree"}</p>
+                         <p className="text-sm font-medium text-foreground/80 mb-2">{typeof sem.degreeId === 'object' ? sem.degreeId?.name : ''}</p>
                         <p className="text-xs text-muted-foreground">Slug: {sem.slug}</p>
                     </CardContent>
                 </Card>

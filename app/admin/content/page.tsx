@@ -20,52 +20,25 @@ import {
   SheetClose
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2, Trash, Pencil, FileText, Video as VideoIcon } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-interface Degree { _id: string; name: string; }
-interface Semester { _id: string; name: string; degreeId: string; }
-interface Subject { _id: string; name: string; semesterId: string; }
-interface Unit { _id: string; name: string; subjectId: string; }
-interface Content {
-    _id: string;
-    title: string;
-    type: "video" | "pdf";
-    url: string;
-    unitId: {
-        _id: string;
-        name: string;
-        subjectId?: {
-            _id: string;
-            name: string;
-            semesterId?: {
-                _id: string;
-                name: string;
-                degreeId?: {
-                    _id: string;
-                    name: string;
-                }
-            }
-        }
-    }
-}
+import { Plus, Loader2, Trash, Pencil, FileText, Video as VideoIcon, Filter, X } from "lucide-react";
+import { useDegrees, Degree } from "@/hooks/admin/use-degrees";
+import { useSemesters, Semester } from "@/hooks/admin/use-semesters";
+import { useSubjects, Subject } from "@/hooks/admin/use-subjects";
+import { useUnits, Unit } from "@/hooks/admin/use-units";
+import { useContent, useCreateContent, useUpdateContent, useDeleteContent, Content } from "@/hooks/admin/use-content";
 
 export default function ContentPage() {
-  const [filteredSemesters, setFilteredSemesters] = useState<Semester[]>([]);
-  const [filteredSubjects, setFilteredSubjects] = useState<Subject[]>([]);
-  const [filteredUnits, setFilteredUnits] = useState<Unit[]>([]);
-  
+  // Create State
   const [isCreating, setIsCreating] = useState(false);
-  
   const [title, setTitle] = useState("");
   const [type, setType] = useState<"video"|"pdf">("video");
   const [url, setUrl] = useState("");
-  
   const [selectedDegree, setSelectedDegree] = useState("");
   const [selectedSemester, setSelectedSemester] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
   const [selectedUnit, setSelectedUnit] = useState("");
 
+  // Edit State
   const [editingContent, setEditingContent] = useState<Content | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editType, setEditType] = useState<"video"|"pdf">("video");
@@ -74,218 +47,125 @@ export default function ContentPage() {
   const [editSemesterId, setEditSemesterId] = useState("");
   const [editSubjectId, setEditSubjectId] = useState("");
   const [editUnitId, setEditUnitId] = useState("");
-
-  const [editFilteredSemesters, setEditFilteredSemesters] = useState<Semester[]>([]);
-  const [editFilteredSubjects, setEditFilteredSubjects] = useState<Subject[]>([]);
-  const [editFilteredUnits, setEditFilteredUnits] = useState<Unit[]>([]);
   
-  const queryClient = useQueryClient();
+
+  // Filter State for List View
+  const [selectedFilterDegree, setSelectedFilterDegree] = useState("all");
+  const [selectedFilterSemester, setSelectedFilterSemester] = useState("all");
+  const [selectedFilterSubject, setSelectedFilterSubject] = useState("all");
+  const [selectedFilterUnit, setSelectedFilterUnit] = useState("all");
 
   // Fetch Degrees
-  const { data: degrees = [] } = useQuery<Degree[]>({
-    queryKey: ["degrees"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/degrees");
-      if (!res.ok) throw new Error("Failed to fetch degrees");
-      return res.json();
-    },
-  });
+  const { data: degrees = [] } = useDegrees();
 
   // Fetch Semesters
-  const { data: semesters = [] } = useQuery<Semester[]>({
-    queryKey: ["semesters"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/semesters");
-      if (!res.ok) throw new Error("Failed to fetch semesters");
-      return res.json();
-    },
-  });
+  const { data: semesters = [] } = useSemesters();
 
   // Fetch Subjects
-  const { data: subjects = [] } = useQuery<Subject[]>({
-    queryKey: ["subjects"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/subjects");
-      if (!res.ok) throw new Error("Failed to fetch subjects");
-      return res.json();
-    },
-  });
+  const { data: subjects = [] } = useSubjects();
 
   // Fetch Units
-  const { data: units = [] } = useQuery<Unit[]>({
-    queryKey: ["units"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/units");
-      if (!res.ok) throw new Error("Failed to fetch units");
-      return res.json();
-    },
-  });
+  const { data: units = [] } = useUnits();
+
+  // Derived filter lists based on selections
+  const filteredSemesters = selectedFilterDegree !== "all"
+    ? semesters.filter((s: Semester) =>(s.degreeId as any) === selectedFilterDegree || (s.degreeId as any)?._id === selectedFilterDegree)
+    : semesters;
+
+  const filteredSubjects = selectedFilterSemester !== "all"
+    ? subjects.filter((s: Subject) => (s.semesterId as any) === selectedFilterSemester || (s.semesterId as any)?._id === selectedFilterSemester)
+    : subjects;
+
+  const filteredUnits = selectedFilterSubject !== "all"
+    ? units.filter((u: Unit) => (u.subjectId as any) === selectedFilterSubject || (u.subjectId as any)?._id === selectedFilterSubject)
+    : units;
 
   // Fetch Content
-  const { data: contentList = [], isLoading: isLoadingContent } = useQuery<Content[]>({
-    queryKey: ["content"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/content");
-      if (!res.ok) throw new Error("Failed to fetch content");
-      return res.json();
-    },
+  const { data: contentList = [], isLoading: isLoadingContent } = useContent({
+    degreeId: selectedFilterDegree,
+    semesterId: selectedFilterSemester,
+    subjectId: selectedFilterSubject,
+    unitId: selectedFilterUnit,
   });
 
-  useEffect(() => {
-    if (selectedDegree) {
-      setFilteredSemesters(semesters.filter(s => s.degreeId === selectedDegree || (s.degreeId as any)._id === selectedDegree));
-    } else {
-        setFilteredSemesters([]);
-    }
-    // Only reset if needed, simplified for better UX
-  }, [selectedDegree, semesters]);
+  // Derived Lists for Create
+  const createSemesters = selectedDegree
+    ? semesters.filter((s: Semester) => (s.degreeId as any) === selectedDegree || (s.degreeId as any)?._id === selectedDegree)
+    : [];
+  const createSubjects = selectedSemester
+    ? subjects.filter((s: Subject) => (s.semesterId as any) === selectedSemester || (s.semesterId as any)?._id === selectedSemester)
+    : [];
+  const createUnits = selectedSubject
+    ? units.filter((u: Unit) => (u.subjectId as any) === selectedSubject || (u.subjectId as any)?._id === selectedSubject)
+    : [];
 
-  useEffect(() => {
-      if (selectedSemester) {
-          setFilteredSubjects(subjects.filter(s => s.semesterId === selectedSemester || (s.semesterId as any)._id === selectedSemester));
-      } else {
-          setFilteredSubjects([]);
-      }
-  }, [selectedSemester, subjects]);
-
-  useEffect(() => {
-      if (selectedSubject) {
-          setFilteredUnits(units.filter(u => u.subjectId === selectedSubject || (u.subjectId as any)._id === selectedSubject));
-      } else {
-          setFilteredUnits([]);
-      }
-  }, [selectedSubject, units]);
-
-  useEffect(() => {
-    if (editDegreeId) {
-      setEditFilteredSemesters(semesters.filter(s => s.degreeId === editDegreeId || (s.degreeId as any)._id === editDegreeId));
-    } else {
-      setEditFilteredSemesters([]);
-    }
-  }, [editDegreeId, semesters]);
-
-  useEffect(() => {
-      if (editSemesterId) {
-          setEditFilteredSubjects(subjects.filter(s => s.semesterId === editSemesterId || (s.semesterId as any)._id === editSemesterId));
-      } else {
-          setEditFilteredSubjects([]);
-      }
-  }, [editSemesterId, subjects]);
-
-  useEffect(() => {
-      if (editSubjectId) {
-          setEditFilteredUnits(units.filter(u => u.subjectId === editSubjectId || (u.subjectId as any)._id === editSubjectId));
-      } else {
-          setEditFilteredUnits([]);
-      }
-  }, [editSubjectId, units]);
+  // Derived Lists for Edit
+  const editSemesters = editDegreeId
+    ? semesters.filter((s: Semester) => (s.degreeId as any) === editDegreeId || (s.degreeId as any)?._id === editDegreeId)
+    : [];
+  const editSubjects = editSemesterId
+    ? subjects.filter((s: Subject) => (s.semesterId as any) === editSemesterId || (s.semesterId as any)?._id === editSemesterId)
+    : [];
+  const editUnits = editSubjectId
+    ? units.filter((u: Unit) => (u.subjectId as any) === editSubjectId || (u.subjectId as any)?._id === editSubjectId)
+    : [];
 
 
   // Create Content
-  const createMutation = useMutation({
-    mutationFn: async ({
-      title,
-      type,
-      url,
-      unitId,
-    }: {
-      title: string;
-      type: "video" | "pdf";
-      url: string;
-      unitId: string;
-    }) => {
-      const res = await fetch("/api/admin/content", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, type, url, unitId }),
-      });
-      if (!res.ok) throw new Error("Failed to create content");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["content"] });
-      setTitle("");
-      setUrl("");
-      setIsCreating(false);
-    },
-    onError: () => {
-      alert("Failed to create content");
-      setIsCreating(false);
-    },
-  });
+  const createMutation = useCreateContent();
 
   // Update Content
-  const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      title,
-      type,
-      url,
-      unitId,
-    }: {
-      id: string;
-      title: string;
-      type: "video" | "pdf";
-      url: string;
-      unitId: string;
-    }) => {
-      const res = await fetch("/api/admin/content", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, title, type, url, unitId }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to update content");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["content"] });
-      setEditingContent(null);
-    },
-    onError: (error) => {
-      alert(error.message);
-    },
-  });
+  const updateMutation = useUpdateContent();
 
   // Delete Content
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/content?id=${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete content");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["content"] });
-    },
-    onError: () => {
-      alert("Failed to delete content");
-    },
-  });
+  const deleteMutation = useDeleteContent();
 
 
   function handleCreate() {
     if (!title || !url || !selectedUnit) return;
     setIsCreating(true);
-    createMutation.mutate({ title, type, url, unitId: selectedUnit });
+    createMutation.mutate(
+      { title, type, url, unitId: selectedUnit },
+      {
+        onSuccess: () => {
+          setTitle("");
+          setUrl("");
+          setIsCreating(false);
+        },
+        onError: () => {
+           alert("Failed to create content");
+           setIsCreating(false);
+        }
+      }
+    );
   }
 
   function handleUpdate() {
     if (!editingContent || !editTitle || !editUrl || !editUnitId) return;
-    updateMutation.mutate({
-      id: editingContent._id,
-      title: editTitle,
-      type: editType,
-      url: editUrl,
-      unitId: editUnitId,
-    });
+    updateMutation.mutate(
+      {
+        id: editingContent._id,
+        title: editTitle,
+        type: editType,
+        url: editUrl,
+        unitId: editUnitId,
+      },
+      {
+         onSuccess: () => {
+             setEditingContent(null);
+         },
+         onError: (error) => {
+             alert((error as Error).message);
+         }
+      }
+    );
   }
 
   function handleDelete(id: string) {
     if (!confirm("Are you sure you want to delete this content item?")) return;
-    deleteMutation.mutate(id);
+    deleteMutation.mutate(id, {
+        onError: () => alert("Failed to delete content")
+    });
   }
 
   return (
@@ -310,48 +190,74 @@ export default function ContentPage() {
             </SheetHeader>
             <div className="py-6 space-y-4">
                {/* Selection Hierarchy */}
-               <div className="space-y-2">
-                  <label className="text-sm font-medium">Degree</label>
-                  <Select onValueChange={setSelectedDegree} value={selectedDegree}>
-                    <SelectTrigger><SelectValue placeholder="Select Degree" /></SelectTrigger>
-                    <SelectContent>
-                      {degrees.map((d) => <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-               </div>
-               <div className="space-y-2">
-                  <label className="text-sm font-medium">Semester</label>
-                  <Select onValueChange={setSelectedSemester} value={selectedSemester} disabled={!selectedDegree}>
-                    <SelectTrigger><SelectValue placeholder="Select Semester" /></SelectTrigger>
-                    <SelectContent>
-                      {filteredSemesters.map((s) => <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-               </div>
-               <div className="space-y-2">
-                  <label className="text-sm font-medium">Subject</label>
-                  <Select onValueChange={setSelectedSubject} value={selectedSubject} disabled={!selectedSemester}>
-                    <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
-                    <SelectContent>
-                      {filteredSubjects.map((s) => <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-               </div>
-               <div className="space-y-2">
-                  <label className="text-sm font-medium">Unit</label>
-                  <Select onValueChange={setSelectedUnit} value={selectedUnit} disabled={!selectedSubject}>
-                    <SelectTrigger><SelectValue placeholder="Select Unit" /></SelectTrigger>
-                    <SelectContent>
-                      {filteredUnits.map((u) => <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-               </div>
+                <div className="space-y-2">
+                   <label className="text-sm font-medium">Degree</label>
+                   <Select 
+                     value={selectedDegree} 
+                     onValueChange={(val) => {
+                       setSelectedDegree(val);
+                       setSelectedSemester("");
+                       setSelectedSubject("");
+                       setSelectedUnit("");
+                     }}
+                   >
+                     <SelectTrigger><SelectValue placeholder="Select Degree" /></SelectTrigger>
+                     <SelectContent>
+                       {degrees.map((d) => <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>)}
+                     </SelectContent>
+                   </Select>
+                </div>
+                <div className="space-y-2">
+                   <label className="text-sm font-medium">Semester</label>
+                   <Select 
+                     value={selectedSemester} 
+                     onValueChange={(val) => {
+                       setSelectedSemester(val);
+                       setSelectedSubject("");
+                       setSelectedUnit("");
+                     }}
+                     disabled={!selectedDegree}
+                   >
+                     <SelectTrigger><SelectValue placeholder="Select Semester" /></SelectTrigger>
+                     <SelectContent>
+                       {createSemesters.map((s) => <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>)}
+                     </SelectContent>
+                   </Select>
+                </div>
+                <div className="space-y-2">
+                   <label className="text-sm font-medium">Subject</label>
+                   <Select 
+                     value={selectedSubject} 
+                     onValueChange={(val) => {
+                        setSelectedSubject(val);
+                        setSelectedUnit("");
+                     }}
+                     disabled={!selectedSemester}
+                   >
+                     <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
+                     <SelectContent>
+                       {createSubjects.map((s) => <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>)}
+                     </SelectContent>
+                   </Select>
+                </div>
+                <div className="space-y-2">
+                   <label className="text-sm font-medium">Unit</label>
+                   <Select 
+                     value={selectedUnit} 
+                     onValueChange={setSelectedUnit}
+                     disabled={!selectedSubject}
+                   >
+                     <SelectTrigger><SelectValue placeholder="Select Unit" /></SelectTrigger>
+                     <SelectContent>
+                       {createUnits.map((u) => <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>)}
+                     </SelectContent>
+                   </Select>
+                </div>
 
                {/* Content Details */}
                <div className="pt-4 border-t border-border/50 space-y-4">
                    <div className="space-y-2">
                       <label className="text-sm font-medium">Title</label>
-                      <Input placeholder="Content Title" value={title} onChange={(e) => setTitle(e.target.value)} />
                    </div>
                    <div className="space-y-2">
                       <label className="text-sm font-medium">Type</label>
@@ -392,42 +298,69 @@ export default function ContentPage() {
             </SheetHeader>
             <div className="py-6 space-y-4">
                {/* Selection Hierarchy */}
-               <div className="space-y-2">
-                  <label className="text-sm font-medium">Degree</label>
-                  <Select onValueChange={setEditDegreeId} value={editDegreeId}>
-                    <SelectTrigger><SelectValue placeholder="Select Degree" /></SelectTrigger>
-                    <SelectContent>
-                      {degrees.map((d) => <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-               </div>
-               <div className="space-y-2">
-                  <label className="text-sm font-medium">Semester</label>
-                  <Select onValueChange={setEditSemesterId} value={editSemesterId} disabled={!editDegreeId}>
-                    <SelectTrigger><SelectValue placeholder="Select Semester" /></SelectTrigger>
-                    <SelectContent>
-                      {editFilteredSemesters.map((s) => <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-               </div>
-               <div className="space-y-2">
-                  <label className="text-sm font-medium">Subject</label>
-                  <Select onValueChange={setEditSubjectId} value={editSubjectId} disabled={!editSemesterId}>
-                    <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
-                    <SelectContent>
-                      {editFilteredSubjects.map((s) => <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-               </div>
-               <div className="space-y-2">
-                  <label className="text-sm font-medium">Unit</label>
-                  <Select onValueChange={setEditUnitId} value={editUnitId} disabled={!editSubjectId}>
-                    <SelectTrigger><SelectValue placeholder="Select Unit" /></SelectTrigger>
-                    <SelectContent>
-                      {editFilteredUnits.map((u) => <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-               </div>
+                <div className="space-y-2">
+                   <label className="text-sm font-medium">Degree</label>
+                   <Select 
+                     value={editDegreeId} 
+                     onValueChange={(val) => {
+                        setEditDegreeId(val);
+                        setEditSemesterId("");
+                        setEditSubjectId("");
+                        setEditUnitId("");
+                     }}
+                   >
+                     <SelectTrigger><SelectValue placeholder="Select Degree" /></SelectTrigger>
+                     <SelectContent>
+                       {degrees.map((d) => <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>)}
+                     </SelectContent>
+                   </Select>
+                </div>
+                <div className="space-y-2">
+                   <label className="text-sm font-medium">Semester</label>
+                   <Select 
+                     value={editSemesterId} 
+                     onValueChange={(val) => {
+                        setEditSemesterId(val);
+                        setEditSubjectId("");
+                        setEditUnitId("");
+                     }}
+                     disabled={!editDegreeId}
+                   >
+                     <SelectTrigger><SelectValue placeholder="Select Semester" /></SelectTrigger>
+                     <SelectContent>
+                       {editSemesters.map((s) => <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>)}
+                     </SelectContent>
+                   </Select>
+                </div>
+                <div className="space-y-2">
+                   <label className="text-sm font-medium">Subject</label>
+                   <Select 
+                     value={editSubjectId} 
+                     onValueChange={(val) => {
+                        setEditSubjectId(val);
+                        setEditUnitId("");
+                     }}
+                     disabled={!editSemesterId}
+                   >
+                     <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
+                     <SelectContent>
+                       {editSubjects.map((s) => <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>)}
+                     </SelectContent>
+                   </Select>
+                </div>
+                <div className="space-y-2">
+                   <label className="text-sm font-medium">Unit</label>
+                   <Select 
+                     value={editUnitId} 
+                     onValueChange={setEditUnitId}
+                     disabled={!editSubjectId}
+                   >
+                     <SelectTrigger><SelectValue placeholder="Select Unit" /></SelectTrigger>
+                     <SelectContent>
+                       {editUnits.map((u) => <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>)}
+                     </SelectContent>
+                   </Select>
+                </div>
 
                {/* Content Details */}
                <div className="pt-4 border-t border-border/50 space-y-4">
@@ -461,6 +394,119 @@ export default function ContentPage() {
           </SheetContent>
         </Sheet>
       </div>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-medium flex items-center gap-2">
+                    <Filter className="h-4 w-4" /> Filter Content
+                </CardTitle>
+                {selectedFilterDegree !== "all" && (
+                    <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => {
+                            setSelectedFilterDegree("all");
+                            setSelectedFilterSemester("all");
+                            setSelectedFilterSubject("all");
+                            setSelectedFilterUnit("all");
+                        }}
+                    >
+                        <X className="mr-2 h-3 w-3" /> Clear Filters
+                    </Button>
+                )}
+            </div>
+        </CardHeader>
+        <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Degree</label>
+                    <Select 
+                        value={selectedFilterDegree} 
+                        onValueChange={(val) => {
+                            setSelectedFilterDegree(val);
+                            setSelectedFilterSemester("all");
+                            setSelectedFilterSubject("all");
+                            setSelectedFilterUnit("all");
+                        }}
+                    >
+                    <SelectTrigger>
+                        <SelectValue placeholder="All Degrees" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Degrees</SelectItem>
+                        {degrees.map((d) => (
+                        <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Semester</label>
+                    <Select 
+                        value={selectedFilterSemester} 
+                        onValueChange={(val) => {
+                            setSelectedFilterSemester(val);
+                            setSelectedFilterSubject("all");
+                            setSelectedFilterUnit("all");
+                        }} 
+                        disabled={selectedFilterDegree === "all"}
+                    >
+                    <SelectTrigger>
+                        <SelectValue placeholder="All Semesters" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Semesters</SelectItem>
+                        {filteredSemesters.map((s: Semester) => (
+                        <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Subject</label>
+                    <Select 
+                        value={selectedFilterSubject} 
+                        onValueChange={(val) => {
+                            setSelectedFilterSubject(val);
+                            setSelectedFilterUnit("all");
+                        }} 
+                        disabled={selectedFilterSemester === "all"}
+                    >
+                    <SelectTrigger>
+                        <SelectValue placeholder="All Subjects" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Subjects</SelectItem>
+                        {filteredSubjects.map((s: Subject) => (
+                        <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Unit</label>
+                    <Select 
+                        value={selectedFilterUnit} 
+                        onValueChange={setSelectedFilterUnit} 
+                        disabled={selectedFilterSubject === "all"}
+                    >
+                    <SelectTrigger>
+                        <SelectValue placeholder="All Units" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Units</SelectItem>
+                        {filteredUnits.map((u: Unit) => (
+                        <SelectItem key={u._id} value={u._id}>{u.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                </div>
+            </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {isLoadingContent ? (

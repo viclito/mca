@@ -20,205 +20,117 @@ import {
   SheetClose
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Loader2, Trash, Pencil } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-interface Degree { _id: string; name: string; }
-interface Semester { _id: string; name: string; degreeId: string; }
-interface Subject { _id: string; name: string; semesterId: string; }
-interface Unit {
-    _id: string;
-    name: string;
-    slug: string;
-    subjectId: {
-        _id: string;
-        name: string;
-        semesterId: {
-            _id: string;
-            name: string;
-            degreeId: Degree;
-        }
-    }
-}
+import { Plus, Loader2, Trash, Pencil, Filter, X } from "lucide-react";
+import { useDegrees, Degree } from "@/hooks/admin/use-degrees";
+import { useSemesters, Semester } from "@/hooks/admin/use-semesters";
+import { useSubjects, Subject } from "@/hooks/admin/use-subjects";
+import { useUnits, useCreateUnit, useUpdateUnit, useDeleteUnit, Unit } from "@/hooks/admin/use-units";
 
 export default function UnitsPage() {
-  const [filteredSemesters, setFilteredSemesters] = useState<Semester[]>([]);
-  const [filteredSubjects, setFilteredSubjects] = useState<Subject[]>([]);
-  
+  // Create State
   const [isCreating, setIsCreating] = useState(false);
-  
   const [newUnitName, setNewUnitName] = useState("");
   const [selectedDegree, setSelectedDegree] = useState("");
   const [selectedSemester, setSelectedSemester] = useState("");
   const [selectedSubject, setSelectedSubject] = useState("");
 
+  // Edit State
   const [editingUnit, setEditingUnit] = useState<Unit | null>(null);
   const [editName, setEditName] = useState("");
   const [editDegreeId, setEditDegreeId] = useState("");
   const [editSemesterId, setEditSemesterId] = useState("");
   const [editSubjectId, setEditSubjectId] = useState("");
-  
-  const [editFilteredSemesters, setEditFilteredSemesters] = useState<Semester[]>([]);
-  const [editFilteredSubjects, setEditFilteredSubjects] = useState<Subject[]>([]);
 
-  const queryClient = useQueryClient();
+  // Filter State for List View
+  const [selectedFilterDegree, setSelectedFilterDegree] = useState("all");
+  const [selectedFilterSemester, setSelectedFilterSemester] = useState("all");
+  const [selectedFilterSubject, setSelectedFilterSubject] = useState("all");
 
   // Fetch Degrees
-  const { data: degrees = [] } = useQuery<Degree[]>({
-    queryKey: ["degrees"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/degrees");
-      if (!res.ok) throw new Error("Failed to fetch degrees");
-      return res.json();
-    },
-  });
+  const { data: degrees = [] } = useDegrees();
 
   // Fetch Semesters
-  const { data: semesters = [] } = useQuery<Semester[]>({
-    queryKey: ["semesters"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/semesters");
-      if (!res.ok) throw new Error("Failed to fetch semesters");
-      return res.json();
-    },
-  });
+  const { data: semesters = [] } = useSemesters();
 
   // Fetch Subjects
-  const { data: subjects = [] } = useQuery<Subject[]>({
-    queryKey: ["subjects"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/subjects");
-      if (!res.ok) throw new Error("Failed to fetch subjects");
-      return res.json();
-    },
-  });
+  const { data: subjects = [] } = useSubjects();
+
+  // Derived Filter Lists
+  const filterSemesters = (selectedFilterDegree && selectedFilterDegree !== "all") 
+    ? semesters.filter(s => s.degreeId === selectedFilterDegree || (s.degreeId as any)._id === selectedFilterDegree)
+    : [];
+    
+  const filterSubjects = (selectedFilterSemester && selectedFilterSemester !== "all")
+    ? subjects.filter(s => s.semesterId === selectedFilterSemester || (s.semesterId as any)._id === selectedFilterSemester)
+    : [];
 
   // Fetch Units
-  const { data: units = [], isLoading: isLoadingUnits } = useQuery<Unit[]>({
-    queryKey: ["units"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/units");
-      if (!res.ok) throw new Error("Failed to fetch units");
-      return res.json();
-    },
+  const { data: units = [], isLoading: isLoadingUnits } = useUnits({
+    degreeId: selectedFilterDegree,
+    semesterId: selectedFilterSemester,
+    subjectId: selectedFilterSubject,
   });
 
-  useEffect(() => {
-    if (selectedDegree) {
-      setFilteredSemesters(semesters.filter(s => s.degreeId === selectedDegree || (s.degreeId as any)._id === selectedDegree));
-    } else {
-        setFilteredSemesters([]);
-    }
-    // Only clear selection if needed
-  }, [selectedDegree, semesters]);
-  
-  useEffect(() => {
-      if (selectedSemester) {
-          setFilteredSubjects(subjects.filter(s => s.semesterId === selectedSemester || (s.semesterId as any)._id === selectedSemester));
-      } else {
-          setFilteredSubjects([]);
-      }
-  }, [selectedSemester, subjects]);
+  // Derived Lists for Create/Edit
+  const createSemesters = selectedDegree
+    ? semesters.filter(s => s.degreeId === selectedDegree || (s.degreeId as any)._id === selectedDegree)
+    : [];
+  const createSubjects = selectedSemester
+    ? subjects.filter(s => s.semesterId === selectedSemester || (s.semesterId as any)._id === selectedSemester)
+    : [];
 
-  useEffect(() => {
-    if (editDegreeId) {
-      setEditFilteredSemesters(semesters.filter(s => s.degreeId === editDegreeId || (s.degreeId as any)._id === editDegreeId));
-    } else {
-      setEditFilteredSemesters([]);
-    }
-  }, [editDegreeId, semesters]);
-
-  useEffect(() => {
-    if (editSemesterId) {
-      setEditFilteredSubjects(subjects.filter(s => s.semesterId === editSemesterId || (s.semesterId as any)._id === editSemesterId));
-    } else {
-      setEditFilteredSubjects([]);
-    }
-  }, [editSemesterId, subjects]);
+  const editSemesters = editDegreeId
+    ? semesters.filter(s => s.degreeId === editDegreeId || (s.degreeId as any)._id === editDegreeId)
+    : [];
+  const editSubjects = editSemesterId
+    ? subjects.filter(s => s.semesterId === editSemesterId || (s.semesterId as any)._id === editSemesterId)
+    : [];
 
   // Create Unit
-  const createMutation = useMutation({
-    mutationFn: async ({ name, subjectId }: { name: string; subjectId: string }) => {
-      const res = await fetch("/api/admin/units", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, subjectId }),
-      });
-      if (!res.ok) throw new Error("Failed to create unit");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["units"] });
-      setNewUnitName("");
-      setIsCreating(false);
-    },
-    onError: () => {
-      alert("Failed to create unit");
-      setIsCreating(false);
-    },
-  });
+  const createMutation = useCreateUnit();
 
   // Update Unit
-  const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      name,
-      subjectId,
-    }: {
-      id: string;
-      name: string;
-      subjectId: string;
-    }) => {
-      const res = await fetch("/api/admin/units", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, name, subjectId }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to update unit");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["units"] });
-      setEditingUnit(null);
-    },
-    onError: (error) => {
-      alert(error.message);
-    },
-  });
+  const updateMutation = useUpdateUnit();
 
   // Delete Unit
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/units?id=${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete unit");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["units"] });
-    },
-    onError: () => {
-      alert("Failed to delete unit");
-    },
-  });
+  const deleteMutation = useDeleteUnit();
 
 
   function handleCreate() {
     if (!newUnitName || !selectedSubject) return;
     setIsCreating(true);
-    createMutation.mutate({ name: newUnitName, subjectId: selectedSubject });
+    createMutation.mutate(
+      { name: newUnitName, subjectId: selectedSubject },
+      {
+        onSuccess: () => {
+          setNewUnitName("");
+          setIsCreating(false);
+        },
+        onError: () => {
+           alert("Failed to create unit");
+           setIsCreating(false);
+        }
+      }
+    );
   }
 
   function handleUpdate() {
     if (!editingUnit || !editName || !editSubjectId) return;
-    updateMutation.mutate({
-      id: editingUnit._id,
-      name: editName,
-      subjectId: editSubjectId,
-    });
+    updateMutation.mutate(
+      {
+        id: editingUnit._id,
+        name: editName,
+        subjectId: editSubjectId,
+      },
+      {
+        onSuccess: () => {
+          setEditingUnit(null);
+        },
+        onError: (error) => {
+           alert((error as Error).message);
+        }
+      }
+    );
   }
 
   function handleDelete(id: string) {
@@ -228,7 +140,9 @@ export default function UnitsPage() {
       )
     )
       return;
-    deleteMutation.mutate(id);
+    deleteMutation.mutate(id, {
+        onError: () => alert("Failed to delete unit")
+    });
   }
 
   return (
@@ -254,7 +168,14 @@ export default function UnitsPage() {
             <div className="py-6 space-y-4">
                <div className="space-y-2">
                   <label className="text-sm font-medium">Degree</label>
-                  <Select onValueChange={setSelectedDegree} value={selectedDegree}>
+                  <Select 
+                    value={selectedDegree} 
+                    onValueChange={(val) => {
+                      setSelectedDegree(val);
+                      setSelectedSemester("");
+                      setSelectedSubject("");
+                    }}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select Degree" />
                     </SelectTrigger>
@@ -267,12 +188,19 @@ export default function UnitsPage() {
                </div>
                <div className="space-y-2">
                   <label className="text-sm font-medium">Semester</label>
-                  <Select onValueChange={setSelectedSemester} value={selectedSemester} disabled={!selectedDegree}>
+                  <Select 
+                    value={selectedSemester} 
+                    onValueChange={(val) => {
+                      setSelectedSemester(val);
+                      setSelectedSubject("");
+                    }}
+                    disabled={!selectedDegree}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Select Semester" />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredSemesters.map((s) => (
+                      {createSemesters.map((s) => (
                         <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -285,7 +213,7 @@ export default function UnitsPage() {
                       <SelectValue placeholder="Select Subject" />
                     </SelectTrigger>
                     <SelectContent>
-                      {filteredSubjects.map((s) => (
+                      {createSubjects.map((s) => (
                         <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -324,7 +252,14 @@ export default function UnitsPage() {
             <div className="py-6 space-y-4">
                <div className="space-y-2">
                   <label className="text-sm font-medium">Degree</label>
-                  <Select onValueChange={setEditDegreeId} value={editDegreeId}>
+                  <Select 
+                    value={editDegreeId} 
+                    onValueChange={(val) => {
+                      setEditDegreeId(val);
+                      setEditSemesterId("");
+                      setEditSubjectId("");
+                    }}
+                  >
                     <SelectTrigger><SelectValue placeholder="Select Degree" /></SelectTrigger>
                     <SelectContent>
                       {degrees.map((d) => (
@@ -335,10 +270,17 @@ export default function UnitsPage() {
                </div>
                <div className="space-y-2">
                   <label className="text-sm font-medium">Semester</label>
-                  <Select onValueChange={setEditSemesterId} value={editSemesterId} disabled={!editDegreeId}>
+                  <Select 
+                    value={editSemesterId} 
+                    onValueChange={(val) => {
+                      setEditSemesterId(val);
+                      setEditSubjectId("");
+                    }}
+                    disabled={!editDegreeId}
+                  >
                     <SelectTrigger><SelectValue placeholder="Select Semester" /></SelectTrigger>
                     <SelectContent>
-                      {editFilteredSemesters.map((s) => (
+                      {editSemesters.map((s) => (
                         <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -349,7 +291,7 @@ export default function UnitsPage() {
                   <Select onValueChange={setEditSubjectId} value={editSubjectId} disabled={!editSemesterId}>
                     <SelectTrigger><SelectValue placeholder="Select Subject" /></SelectTrigger>
                     <SelectContent>
-                      {editFilteredSubjects.map((s) => (
+                      {editSubjects.map((s) => (
                         <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -374,6 +316,91 @@ export default function UnitsPage() {
           </SheetContent>
         </Sheet>
       </div>
+
+      {/* Filters */}
+      <Card>
+        <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-medium flex items-center gap-2">
+                    <Filter className="h-4 w-4" /> Filter Units
+                </CardTitle>
+                {selectedFilterDegree !== "all" && (
+                    <Button 
+                        variant="ghost" 
+                        size="sm"
+                        className="h-8 text-muted-foreground hover:text-foreground"
+                        onClick={() => {
+                            setSelectedFilterDegree("all");
+                            setSelectedFilterSemester("all");
+                            setSelectedFilterSubject("all");
+                        }}
+                    >
+                        <X className="mr-2 h-3 w-3" /> Clear Filters
+                    </Button>
+                )}
+            </div>
+        </CardHeader>
+        <CardContent>
+            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Degree</label>
+                    <Select 
+                      value={selectedFilterDegree} 
+                      onValueChange={(val) => {
+                          setSelectedFilterDegree(val);
+                          setSelectedFilterSemester("all");
+                          setSelectedFilterSubject("all");
+                      }}
+                    >
+                    <SelectTrigger>
+                        <SelectValue placeholder="All Degrees" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Degrees</SelectItem>
+                        {degrees.map((d) => (
+                        <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Semester</label>
+                    <Select 
+                      value={selectedFilterSemester} 
+                      onValueChange={(val) => {
+                          setSelectedFilterSemester(val);
+                          setSelectedFilterSubject("all");
+                      }} 
+                      disabled={selectedFilterDegree === "all"}
+                    >
+                    <SelectTrigger>
+                        <SelectValue placeholder="All Semesters" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Semesters</SelectItem>
+                        {filterSemesters.map((s) => (
+                        <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                </div>
+                <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">Subject</label>
+                    <Select value={selectedFilterSubject} onValueChange={setSelectedFilterSubject} disabled={selectedFilterSemester === "all"}>
+                    <SelectTrigger>
+                        <SelectValue placeholder="All Subjects" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="all">All Subjects</SelectItem>
+                        {filterSubjects.map((s) => (
+                        <SelectItem key={s._id} value={s._id}>{s.name}</SelectItem>
+                        ))}
+                    </SelectContent>
+                    </Select>
+                </div>
+            </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {isLoadingUnits ? (

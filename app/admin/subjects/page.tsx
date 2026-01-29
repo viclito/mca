@@ -21,38 +21,17 @@ import {
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Loader2, Trash, Pencil } from "lucide-react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-interface Degree {
-  _id: string;
-  name: string;
-}
-
-interface Semester {
-  _id: string;
-  name: string;
-  degreeId: string;
-}
-
-interface Subject {
-  _id: string;
-  name: string;
-  slug: string;
-  semesterId: {
-      _id: string;
-      name: string;
-      degreeId: Degree;
-  };
-}
+import { useDegrees, Degree } from "@/hooks/admin/use-degrees";
+import { useSemesters, Semester } from "@/hooks/admin/use-semesters";
+import { useSubjects, useCreateSubject, useUpdateSubject, useDeleteSubject, Subject } from "@/hooks/admin/use-subjects";
 
 export default function SubjectsPage() {
   const [filteredSemesters, setFilteredSemesters] = useState<Semester[]>([]);
   
-  const [isCreating, setIsCreating] = useState(false);
-  
   const [newSubjectName, setNewSubjectName] = useState("");
   const [selectedDegree, setSelectedDegree] = useState("");
   const [selectedSemester, setSelectedSemester] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
 
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
   const [editName, setEditName] = useState("");
@@ -60,37 +39,12 @@ export default function SubjectsPage() {
   const [editSemesterId, setEditSemesterId] = useState("");
   const [editFilteredSemesters, setEditFilteredSemesters] = useState<Semester[]>([]);
 
-  const queryClient = useQueryClient();
-
-  // Fetch Degrees
-  const { data: degrees = [] } = useQuery<Degree[]>({
-    queryKey: ["degrees"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/degrees");
-      if (!res.ok) throw new Error("Failed to fetch degrees");
-      return res.json();
-    },
-  });
-
-  // Fetch Semesters
-  const { data: semesters = [] } = useQuery<Semester[]>({
-    queryKey: ["semesters"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/semesters");
-      if (!res.ok) throw new Error("Failed to fetch semesters");
-      return res.json();
-    },
-  });
-
-  // Fetch Subjects
-  const { data: subjects = [], isLoading: isLoadingSubjects } = useQuery<Subject[]>({
-    queryKey: ["subjects"],
-    queryFn: async () => {
-      const res = await fetch("/api/admin/subjects");
-      if (!res.ok) throw new Error("Failed to fetch subjects");
-      return res.json();
-    },
-  });
+  const { data: degrees = [] } = useDegrees();
+  const { data: semesters = [] } = useSemesters();
+  const { data: subjects = [], isLoading: isLoadingSubjects } = useSubjects();
+  const createMutation = useCreateSubject();
+  const updateMutation = useUpdateSubject();
+  const deleteMutation = useDeleteSubject();
 
   useEffect(() => {
     if (selectedDegree) {
@@ -108,99 +62,47 @@ export default function SubjectsPage() {
     }
   }, [editDegreeId, semesters]);
 
-  // Create Subject
-  const createMutation = useMutation({
-    mutationFn: async ({ name, semesterId }: { name: string; semesterId: string }) => {
-      const res = await fetch("/api/admin/subjects", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, semesterId }),
-      });
-      if (!res.ok) throw new Error("Failed to create subject");
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["subjects"] });
-      setNewSubjectName("");
-      setIsCreating(false);
-    },
-    onError: () => {
-      alert("Failed to create subject");
-      setIsCreating(false);
-    },
-  });
-
-  // Update Subject
-  const updateMutation = useMutation({
-    mutationFn: async ({
-      id,
-      name,
-      semesterId,
-    }: {
-      id: string;
-      name: string;
-      semesterId: string;
-    }) => {
-      const res = await fetch("/api/admin/subjects", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, name, semesterId }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || "Failed to update subject");
-      }
-      return res.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["subjects"] });
-      setEditingSubject(null);
-    },
-    onError: (error) => {
-      alert(error.message);
-    },
-  });
-
-  // Delete Subject
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/admin/subjects?id=${id}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) throw new Error("Failed to delete subject");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["subjects"] });
-    },
-    onError: () => {
-      alert("Failed to delete subject");
-    },
-  });
-
-
   function handleCreate() {
-    if (!newSubjectName || !selectedSemester) return;
+    if (!newSubjectName.trim() || !selectedSemester) return;
     setIsCreating(true);
-    createMutation.mutate({ name: newSubjectName, semesterId: selectedSemester });
+    createMutation.mutate({ name: newSubjectName, semesterId: selectedSemester }, {
+      onSuccess: () => {
+        setNewSubjectName("");
+        setIsCreating(false);
+      },
+      onError: () => {
+        alert("Failed to create subject");
+        setIsCreating(false);
+      }
+    });
   }
 
   function handleUpdate() {
-    if (!editingSubject || !editName || !editSemesterId) return;
+    if (!editingSubject || !editName.trim() || !editSemesterId) return;
     updateMutation.mutate({
       id: editingSubject._id,
       name: editName,
       semesterId: editSemesterId,
+    }, {
+      onSuccess: () => {
+        setEditingSubject(null);
+      },
+      onError: (error) => {
+        alert((error as Error).message);
+      }
     });
   }
 
   function handleDelete(id: string) {
     if (
       !confirm(
-        "Are you sure you want to delete this subject? This will not delete sub-items but may break references."
+        "Are you sure you want to delete this subject? This will cascade to all related units."
       )
     )
       return;
-    deleteMutation.mutate(id);
+    deleteMutation.mutate(id, {
+      onError: () => alert("Failed to delete subject")
+    });
   }
 
   return (
@@ -341,8 +243,9 @@ export default function SubjectsPage() {
                                 onClick={() => {
                                     setEditingSubject(sub);
                                     setEditName(sub.name);
-                                    setEditDegreeId(sub.semesterId?.degreeId?._id || "");
-                                    setEditSemesterId(sub.semesterId?._id || "");
+                                    const semId = typeof sub.semesterId === 'string' ? sub.semesterId : sub.semesterId;
+                                    setEditDegreeId(typeof semId === 'object' && semId?.degreeId ? (typeof semId.degreeId === 'string' ? semId.degreeId : semId.degreeId._id) : "");
+                                    setEditSemesterId(typeof semId === 'string' ? semId : semId?._id || "");
                                 }}
                             >
                                 <Pencil className="h-4 w-4" />
@@ -359,7 +262,7 @@ export default function SubjectsPage() {
                     </CardHeader>
                     <CardContent>
                          <div className="text-sm text-foreground/80 mb-1">
-                             {sub.semesterId?.degreeId?.name} &gt; {sub.semesterId?.name}
+                             {typeof sub.semesterId === 'object' && sub.semesterId?.degreeId ? (typeof sub.semesterId.degreeId === 'object' ? sub.semesterId.degreeId.name : '') : ''} &gt; {typeof sub.semesterId === 'object' ? sub.semesterId?.name : ''}
                          </div>
                         <p className="text-xs text-muted-foreground">Slug: {sub.slug}</p>
                     </CardContent>

@@ -11,10 +11,30 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const unitId = searchParams.get("unitId");
+    const subjectId = searchParams.get("subjectId");
+    const semesterId = searchParams.get("semesterId");
+    const degreeId = searchParams.get("degreeId");
 
     await dbConnect();
 
-    const query = unitId ? { unitId } : {};
+    let query: any = {};
+
+    if (unitId) {
+        query.unitId = unitId;
+    } else if (subjectId) {
+        const units = await Unit.find({ subjectId }).select("_id");
+        query.unitId = { $in: units.map(u => u._id) };
+    } else if (semesterId) {
+        const subjects = await Subject.find({ semesterId }).select("_id");
+        const units = await Unit.find({ subjectId: { $in: subjects.map(s => s._id) } }).select("_id");
+        query.unitId = { $in: units.map(u => u._id) };
+    } else if (degreeId) {
+        const semesters = await Semester.find({ degreeId }).select("_id");
+        const subjects = await Subject.find({ semesterId: { $in: semesters.map(s => s._id) } }).select("_id");
+        const units = await Unit.find({ subjectId: { $in: subjects.map(s => s._id) } }).select("_id");
+        query.unitId = { $in: units.map(u => u._id) };
+    }
+
     const content = await Content.find(query).populate({
         path: 'unitId',
         populate: {

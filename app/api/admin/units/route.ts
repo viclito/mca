@@ -11,10 +11,24 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const subjectId = searchParams.get("subjectId");
+    const semesterId = searchParams.get("semesterId");
+    const degreeId = searchParams.get("degreeId");
 
     await dbConnect();
 
-    const query = subjectId ? { subjectId } : {};
+    let query: any = {};
+
+    if (subjectId) {
+      query.subjectId = subjectId;
+    } else if (semesterId) {
+      const subjects = await Subject.find({ semesterId }).select("_id");
+      query.subjectId = { $in: subjects.map(s => s._id) };
+    } else if (degreeId) {
+      const semesters = await Semester.find({ degreeId }).select("_id");
+      const subjects = await Subject.find({ semesterId: { $in: semesters.map(s => s._id) } }).select("_id");
+      query.subjectId = { $in: subjects.map(s => s._id) };
+    }
+
     const units = await Unit.find(query).populate({
         path: 'subjectId',
         populate: { 
