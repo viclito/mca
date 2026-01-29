@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 
 import Link from "next/link";
+import Image from "next/image";
 import { USERS_COURSE } from "@/lib/data";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { BookOpen, GraduationCap, ArrowRight, Library, MonitorPlay, Bell, FileText, Video as VideoIcon, ExternalLink, Calendar, Megaphone, CalendarClock, Clock, Sparkles } from "lucide-react";
@@ -296,11 +297,12 @@ export default function Home() {
                                         {mainNotification.type === "image" && mainNotification.images && mainNotification.images.length > 0 && (
                                             <div className="space-y-3">
                                                 {mainNotification.images.map((img, idx) => (
-                                                    <div key={idx} className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                                                        <img 
+                                                    <div key={idx} className="rounded-xl overflow-hidden border border-gray-100 shadow-sm relative min-h-[200px]">
+                                                        <Image 
                                                             src={getDirectImageUrl(img)} 
                                                             alt={`${mainNotification.title} - Image ${idx + 1}`} 
-                                                            className="w-full h-auto object-cover" 
+                                                            fill
+                                                            className="object-cover" 
                                                         />
                                                     </div>
                                                 ))}
@@ -308,11 +310,12 @@ export default function Home() {
                                         )}
                                         {/* Display single image for backward compatibility */}
                                         {mainNotification.type !== "image" && mainNotification.image && (
-                                            <div className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                                                <img 
+                                            <div className="rounded-xl overflow-hidden border border-gray-100 shadow-sm relative min-h-[200px]">
+                                                <Image 
                                                     src={getDirectImageUrl(mainNotification.image)} 
                                                     alt={mainNotification.title} 
-                                                    className="w-full h-auto object-cover" 
+                                                    fill
+                                                    className="object-cover" 
                                                 />
                                             </div>
                                         )}
@@ -492,11 +495,12 @@ export default function Home() {
                                             {note.type === "image" && note.images && note.images.length > 0 && (
                                                 <div className="space-y-3">
                                                     {note.images.map((img, idx) => (
-                                                        <div key={idx} className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                                                            <img 
+                                                        <div key={idx} className="rounded-xl overflow-hidden border border-gray-100 shadow-sm relative min-h-[200px]">
+                                                            <Image 
                                                                 src={getDirectImageUrl(img)} 
                                                                 alt={`${note.title} - Image ${idx + 1}`} 
-                                                                className="w-full h-auto object-cover" 
+                                                                fill
+                                                                className="object-cover" 
                                                             />
                                                         </div>
                                                     ))}
@@ -504,11 +508,12 @@ export default function Home() {
                                             )}
                                             {/* Display single image for backward compatibility */}
                                             {note.type !== "image" && note.image && (
-                                                <div className="rounded-xl overflow-hidden border border-gray-100 shadow-sm">
-                                                    <img 
+                                                <div className="rounded-xl overflow-hidden border border-gray-100 shadow-sm relative min-h-[200px]">
+                                                    <Image 
                                                         src={getDirectImageUrl(note.image)} 
                                                         alt={note.title} 
-                                                        className="w-full h-auto object-cover" 
+                                                        fill
+                                                        className="object-cover" 
                                                     />
                                                 </div>
                                             )}

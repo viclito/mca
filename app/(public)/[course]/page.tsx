@@ -8,6 +8,10 @@ import dbConnect from "@/lib/db";
 import Degree from "@/lib/models/Degree";
 import Semester from "@/lib/models/Semester";
 import Subject from "@/lib/models/Subject"; // Import for count
+import { Metadata } from "next";
+import { generatePageMetadata, siteConfig } from "@/lib/seo-config";
+import { generateCourseSchema, generateBreadcrumbSchema } from "@/lib/structured-data";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 interface PageProps {
   params: Promise<{
@@ -36,6 +40,36 @@ async function getCourseData(slug: string) {
     return { degree, semesters: semestersWithCounts };
 }
 
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { course } = await params;
+  const data = await getCourseData(course);
+
+  if (!data) {
+    return generatePageMetadata({
+      title: "Course Not Found",
+      description: "The requested course could not be found.",
+      path: `/${course}`,
+      noIndex: true,
+    });
+  }
+
+  const { degree, semesters } = data;
+
+  return generatePageMetadata({
+    title: `${degree.name} - Course Curriculum`,
+    description: `Explore the complete curriculum for ${degree.name}. Access ${semesters.length} semesters of comprehensive study materials, resources, and educational content.`,
+    keywords: [
+      degree.name,
+      "MCA Course",
+      "Curriculum",
+      "Semesters",
+      "Study Materials",
+      "Computer Applications"
+    ],
+    path: `/${course}`,
+  });
+}
+
 export default async function SemesterPage({ params }: PageProps) {
   const { course } = await params;
   const data = await getCourseData(course);
@@ -46,18 +80,43 @@ export default async function SemesterPage({ params }: PageProps) {
 
   const { degree, semesters } = data;
 
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: "Home", url: "/" },
+    { name: degree.name, url: `/${course}` },
+  ]);
+
+  const courseSchema = generateCourseSchema({
+    name: degree.name,
+    description: `Complete ${degree.name} curriculum with ${semesters.length} semesters of study materials.`,
+    url: `/${course}`,
+  });
+
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbSchema),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(courseSchema),
+        }}
+      />
     <div className="min-h-screen bg-[#F4F7FB] p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Header Bar with Breadcrumbs */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              <Link href="/" className="hover:text-primary transition-colors">Home</Link>
-              <span>/</span>
-              <span className="text-slate-600">Curriculum</span>
-            </div>
+            <Breadcrumbs 
+              items={[
+                { label: degree.name, href: `/${course}`, current: true }
+              ]} 
+              className="mb-2"
+            />
             <h1 className="text-2xl font-bold text-slate-900">{degree.name}</h1>
           </div>
           <div className="inline-flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-500">
@@ -160,5 +219,6 @@ export default async function SemesterPage({ params }: PageProps) {
         </div>
       </div>
     </div>
+    </>
   );
 }

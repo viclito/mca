@@ -7,10 +7,17 @@ import dbConnect from "@/lib/db";
 import Subject from "@/lib/models/Subject";
 import Unit from "@/lib/models/Unit";
 import Content from "@/lib/models/Content";
+import { Metadata } from "next";
+import { generatePageMetadata } from "@/lib/seo-config";
+import { generateBreadcrumbSchema, generateLearningResourceSchema } from "@/lib/structured-data";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 async function getSubjectData(subjectSlug: string) {
     await dbConnect();
-    const subject = await Subject.findOne({ slug: subjectSlug });
+    const subject = await Subject.findOne({ slug: subjectSlug }).populate({
+        path: 'semesterId',
+        populate: { path: 'degreeId' }
+    });
     if (!subject) return null;
 
     const units = await Unit.find({ subjectId: subject._id }).sort({ name: 1 });
@@ -29,6 +36,39 @@ async function getSubjectData(subjectSlug: string) {
     return { subject, units: unitsWithCounts };
 }
 
+export async function generateMetadata({ params }: { params: Promise<{ course: string; semester: string; subject: string }> }): Promise<Metadata> {
+  const { course, semester, subject: subjectSlug } = await params;
+  const data = await getSubjectData(subjectSlug);
+
+  if (!data) {
+    return generatePageMetadata({
+      title: "Subject Not Found",
+      description: "The requested subject could not be found.",
+      path: `/${course}/${semester}/${subjectSlug}`,
+      noIndex: true,
+    });
+  }
+
+  const { subject } = data;
+  const semesterName = typeof subject.semesterId === 'object' ? subject.semesterId.name : semester.toUpperCase();
+  const degreeName = typeof subject.semesterId === 'object' && typeof subject.semesterId.degreeId === 'object' ? subject.semesterId.degreeId.name : course.toUpperCase();
+
+  return generatePageMetadata({
+    title: `${subject.name} - ${semesterName} | ${degreeName}`,
+    description: `Comprehensive study material for ${subject.name}. Includes ${data.units.length} units with video lectures and PDF resources. Perfect for ${degreeName} students.`,
+    keywords: [
+      subject.name,
+      semesterName,
+      degreeName,
+      "Study Units",
+      "Video Lectures",
+      "Course Notes",
+      ...data.units.map((u: any) => u.name)
+    ],
+    path: `/${course}/${semester}/${subjectSlug}`,
+  });
+}
+
 export default async function SubjectDetailsPage({
   params,
 }: {
@@ -40,19 +80,48 @@ export default async function SubjectDetailsPage({
   if (!data) return notFound();
 
   const { subject, units } = data;
+  const semesterName = typeof subject.semesterId === 'object' ? subject.semesterId.name : semester.toUpperCase();
+  const degreeName = typeof subject.semesterId === 'object' && typeof subject.semesterId.degreeId === 'object' ? subject.semesterId.degreeId.name : course.toUpperCase();
+
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: "Home", url: "/" },
+    { name: degreeName, url: `/${course}` },
+    { name: semesterName, url: `/${course}/${semester}` },
+    { name: subject.name, url: `/${course}/${semester}/${subjectSlug}` },
+  ]);
+
+  const learningResourceSchema = generateLearningResourceSchema({
+    name: `${subject.name} - ${semesterName} | ${degreeName}`,
+    description: `Comprehensive units and topics for ${subject.name}.`,
+    url: `/${course}/${semester}/${subjectSlug}`,
+  });
 
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbSchema),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(learningResourceSchema),
+        }}
+      />
     <div className="min-h-screen bg-background">
        {/* Header */}
       <div className="px-6 py-8 border-b bg-muted/10">
         <div className="max-w-5xl mx-auto">
-          <Link
-            href={`/${course}/${semester}`}
-            className="inline-flex items-center text-sm font-medium text-muted-foreground hover:text-foreground transition-colors mb-4"
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to {semester}
-          </Link>
+          <Breadcrumbs 
+            items={[
+              { label: degreeName, href: `/${course}` },
+              { label: semesterName, href: `/${course}/${semester}` },
+              { label: subject.name, href: `/${course}/${semester}/${subjectSlug}`, current: true }
+            ]}
+            className="mb-4"
+          />
           <div className="flex flex-col gap-2">
              <div className="flex items-center gap-2">
                  <h1 className="text-3xl font-bold tracking-tight">{subject.name}</h1>
@@ -89,5 +158,6 @@ export default async function SubjectDetailsPage({
         </div>
       </div>
     </div>
+    </>
   );
 }

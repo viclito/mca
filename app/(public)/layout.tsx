@@ -3,6 +3,21 @@ import { MobileHeader } from "@/components/MobileHeader";
 import { Footer } from "@/components/Footer";
 import { getNavigationData } from "@/lib/actions/navigation";
 import { auth } from "@/auth";
+import { generatePageMetadata } from "@/lib/seo-config";
+
+export const metadata = generatePageMetadata({
+  title: "Home - MCA Hub",
+  description: "Welcome to MCA Hub - Your comprehensive learning portal for Master of Computer Applications. Access course materials, study resources, and educational content.",
+  keywords: [
+    "MCA",
+    "Master of Computer Applications",
+    "Computer Science",
+    "Online Learning",
+    "Study Portal",
+    "Educational Resources"
+  ],
+  path: "/",
+});
 
 export default async function PublicLayout({
   children,

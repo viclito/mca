@@ -8,10 +8,15 @@ import dbConnect from "@/lib/db";
 import Semester from "@/lib/models/Semester";
 import Subject from "@/lib/models/Subject";
 import Unit from "@/lib/models/Unit";
+import { Metadata } from "next";
+import { generatePageMetadata } from "@/lib/seo-config";
+import { generateBreadcrumbSchema, generateCourseSchema } from "@/lib/structured-data";
+import Degree from "@/lib/models/Degree";
+import { Breadcrumbs } from "@/components/Breadcrumbs";
 
 async function getSemesterData(semesterSlug: string) {
     await dbConnect();
-    const semester = await Semester.findOne({ slug: semesterSlug });
+    const semester = await Semester.findOne({ slug: semesterSlug }).populate('degreeId');
     if (!semester) return null;
 
     const subjects = await Subject.find({ semesterId: semester._id }).sort({ name: 1 });
@@ -28,6 +33,37 @@ async function getSemesterData(semesterSlug: string) {
     return { semester, subjects: subjectsWithCounts };
 }
 
+export async function generateMetadata({ params }: { params: Promise<{ course: string; semester: string }> }): Promise<Metadata> {
+  const { course, semester } = await params;
+  const data = await getSemesterData(semester);
+
+  if (!data) {
+    return generatePageMetadata({
+      title: "Semester Not Found",
+      description: "The requested semester could not be found.",
+      path: `/${course}/${semester}`,
+      noIndex: true,
+    });
+  }
+
+  const { semester: semesterData } = data;
+  const degreeName = typeof semesterData.degreeId === 'object' ? semesterData.degreeId.name : course.toUpperCase();
+
+  return generatePageMetadata({
+    title: `${semesterData.name} - ${degreeName}`,
+    description: `Access study materials, notes, and resources for ${semesterData.name} of the ${degreeName} program. Exploring subjects like ${data.subjects.slice(0, 3).map((s: any) => s.name).join(', ')}.`,
+    keywords: [
+      semesterData.name,
+      degreeName,
+      "Study Materials",
+      "MCA Notes",
+      "Computer Applications",
+      ...data.subjects.map((s: any) => s.name)
+    ],
+    path: `/${course}/${semester}`,
+  });
+}
+
 export default async function SemesterDetailsPage({
   params,
 }: {
@@ -39,21 +75,47 @@ export default async function SemesterDetailsPage({
   if (!data) return notFound();
 
   const { semester: semesterData, subjects } = data;
+  const degreeName = typeof semesterData.degreeId === 'object' ? semesterData.degreeId.name : course.toUpperCase();
+
+  const breadcrumbSchema = generateBreadcrumbSchema([
+    { name: "Home", url: "/" },
+    { name: degreeName, url: `/${course}` },
+    { name: semesterData.name, url: `/${course}/${semester}` },
+  ]);
+
+  const courseSchema = generateCourseSchema({
+    name: `${semesterData.name} - ${degreeName}`,
+    description: `Detailed study materials and resources for ${semesterData.name} of ${degreeName}.`,
+    url: `/${course}/${semester}`,
+  });
 
   return (
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(breadcrumbSchema),
+        }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(courseSchema),
+        }}
+      />
     <div className="min-h-screen bg-[#F4F7FB] p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         
         {/* Header Bar with Breadcrumbs */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-              <Link href="/" className="hover:text-primary transition-colors">Home</Link>
-              <span>/</span>
-              <Link href={`/${course}`} className="hover:text-primary transition-colors uppercase">{course}</Link>
-              <span>/</span>
-              <span className="text-slate-600 uppercase">Semester</span>
-            </div>
+            <Breadcrumbs 
+              items={[
+                { label: degreeName, href: `/${course}` },
+                { label: semesterData.name, href: `/${course}/${semester}`, current: true }
+              ]}
+              className="mb-2"
+            />
             <h1 className="text-2xl font-bold text-slate-900">{semesterData.name} Overview</h1>
           </div>
           <div className="inline-flex items-center gap-2 rounded-lg border border-slate-100 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-500">
@@ -152,5 +214,6 @@ export default async function SemesterDetailsPage({
         </div>
       </div>
     </div>
+    </>
   );
 }
