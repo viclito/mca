@@ -93,7 +93,7 @@ export const defaultMetadata = {
   },
   manifest: "/manifest.json",
   verification: {
-    google: "8xKNpaR6m3QFJcklTF3Cciy_Rf2C-djb7BBKU07eTNI",
+    google: "cETdfQKwsKBINm-2olRvmXjb5-CkvK1XfP63Nul-qYs",
   },
 };
 
