@@ -92,6 +92,9 @@ export const defaultMetadata = {
     apple: "/apple-touch-icon.png",
   },
   manifest: "/manifest.json",
+  verification: {
+    google: "8xKNpaR6m3QFJcklTF3Cciy_Rf2C-djb7BBKU07eTNI",
+  },
 };
 
 // Helper to generate page metadata
