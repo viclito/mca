@@ -7,6 +7,9 @@ import Subject from "@/lib/models/Subject";
 import Semester from "@/lib/models/Semester";
 import Degree from "@/lib/models/Degree";
 
+// Ensure all models are loaded for populate to work
+const models = { Unit, Subject, Semester, Degree, Content };
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
@@ -15,26 +18,37 @@ export async function GET(req: Request) {
     const semesterId = searchParams.get("semesterId");
     const degreeId = searchParams.get("degreeId");
 
-    await dbConnect();
+    console.log('[Content API] Connecting to database...');
+    const dbConnection = await Promise.race([
+      dbConnect(),
+      new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Database connection timeout')), 10000)
+      )
+    ]);
+    console.log('[Content API] Database connected successfully');
 
     let query: any = {};
 
     if (unitId) {
         query.unitId = unitId;
     } else if (subjectId) {
+        console.log('[Content API] Filtering by subjectId:', subjectId);
         const units = await Unit.find({ subjectId }).select("_id");
         query.unitId = { $in: units.map(u => u._id) };
     } else if (semesterId) {
+        console.log('[Content API] Filtering by semesterId:', semesterId);
         const subjects = await Subject.find({ semesterId }).select("_id");
         const units = await Unit.find({ subjectId: { $in: subjects.map(s => s._id) } }).select("_id");
         query.unitId = { $in: units.map(u => u._id) };
     } else if (degreeId) {
+        console.log('[Content API] Filtering by degreeId:', degreeId);
         const semesters = await Semester.find({ degreeId }).select("_id");
         const subjects = await Subject.find({ semesterId: { $in: semesters.map(s => s._id) } }).select("_id");
         const units = await Unit.find({ subjectId: { $in: subjects.map(s => s._id) } }).select("_id");
         query.unitId = { $in: units.map(u => u._id) };
     }
 
+    console.log('[Content API] Fetching content with query:', JSON.stringify(query));
     const content = await Content.find(query).populate({
         path: 'unitId',
         populate: {
@@ -46,10 +60,16 @@ export async function GET(req: Request) {
         }
     }).sort({ createdAt: -1 });
 
+    console.log('[Content API] Successfully fetched', content.length, 'items');
     return NextResponse.json(content);
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+  } catch (error: any) {
+    console.error('[Content API ERROR]:', error);
+    console.error('[Content API ERROR Stack]:', error.stack);
+    console.error('[Content API ERROR Message]:', error.message);
+    return NextResponse.json({ 
+      message: "Internal Server Error", 
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined 
+    }, { status: 500 });
   }
 }
 
