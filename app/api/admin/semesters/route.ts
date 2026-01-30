@@ -5,6 +5,9 @@ import { auth } from "@/auth";
 import slugify from "slugify";
 import Degree from "@/lib/models/Degree";
 
+// Ensure all models are loaded for populate to work
+const models = { Degree, Semester };
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);

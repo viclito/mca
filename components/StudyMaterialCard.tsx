@@ -1,7 +1,7 @@
 import Link from "next/link";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { ExternalLink, BookOpen, FileText, Download } from "lucide-react";
+import { ExternalLink, BookOpen, FileText, Download, ChevronRight } from "lucide-react";
 
 interface StudyMaterialCardProps {
   title: string;
@@ -9,10 +9,10 @@ interface StudyMaterialCardProps {
   url: string;
   contentId: string;
   basePath: string; // e.g., /course/sem/sub
+  isLast?: boolean;
 }
 
-export function StudyMaterialCard({ title, type, url, contentId, basePath }: StudyMaterialCardProps) {
-  // Function to convert Google Drive view link to download link
+export function StudyMaterialCard({ title, type, url, contentId, basePath, isLast }: StudyMaterialCardProps) {
   const getDownloadUrl = (viewUrl: string) => {
     if (viewUrl.includes('drive.google.com')) {
       const match = viewUrl.match(/\/d\/(.+?)\//) || viewUrl.match(/id=(.+?)(&|$)/);
@@ -24,38 +24,42 @@ export function StudyMaterialCard({ title, type, url, contentId, basePath }: Stu
   };
 
   return (
-    <Card className="flex items-center justify-between p-4 hover:shadow-md transition-shadow">
+    <div className={cn(
+      "flex items-center justify-between p-4 transition-all duration-200 hover:bg-emerald-500/5 group",
+      !isLast && "border-b border-border/40"
+    )}>
       <div className="flex items-center gap-4 min-w-0">
-        <div className="h-10 w-10 rounded-lg bg-red-100 dark:bg-red-900/20 text-red-600 dark:text-red-400 flex items-center justify-center shrink-0">
-             <FileText className="h-5 w-5" />
+        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/5 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-colors shrink-0">
+          <FileText className="h-5 w-5" />
         </div>
         <div className="min-w-0">
-          <h4 className="font-medium truncate pr-4 text-sm md:text-base">{title}</h4>
-          <p className="text-xs text-muted-foreground">{type === 'pdf' ? 'PDF Document' : 'Video'}</p>
+          <h3 className="font-semibold text-foreground group-hover:text-emerald-700 transition-colors truncate pr-4">{title}</h3>
+          <p className="text-[12px] text-muted-foreground mt-0.5 uppercase tracking-wider font-medium">PDF Document</p>
         </div>
       </div>
       
       <div className="flex items-center gap-2 shrink-0">
-         <Button variant="outline" size="sm" asChild className="hidden sm:flex">
-             <a href={url} target="_blank" rel="noopener noreferrer">
-                 <ExternalLink className="mr-2 h-4 w-4" /> Drive
-             </a>
+         <Button variant="ghost" size="icon" asChild title="Open in Drive" className="h-9 w-9 text-muted-foreground/50 hover:text-emerald-600 hover:bg-emerald-500/10">
+              <a href={url} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4" />
+              </a>
          </Button>
 
-         {type === "pdf" && (
-           <Button variant="outline" size="icon" asChild title="Download PDF" className="h-9 w-9 hidden sm:flex">
-              <a href={getDownloadUrl(url)} download target="_blank" rel="noopener noreferrer">
-                <Download className="h-4 w-4" />
-              </a>
-           </Button>
-         )}
-         
-         <Button size="sm" asChild>
-             <Link href={`${basePath}/read/${contentId}`}>
-                 <BookOpen className="mr-2 h-4 w-4" /> Read Book
-             </Link>
+         <Button variant="ghost" size="icon" asChild title="Download PDF" className="h-9 w-9 text-muted-foreground/50 hover:text-emerald-600 hover:bg-emerald-500/10">
+            <a href={getDownloadUrl(url)} download target="_blank" rel="noopener noreferrer">
+              <Download className="h-4 w-4" />
+            </a>
          </Button>
+         
+         <Link 
+           href={`${basePath}/read/${contentId}`}
+           className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all text-sm font-semibold ml-2"
+         >
+           <BookOpen className="h-4 w-4" />
+           <span className="hidden sm:inline">Read Online</span>
+           <ChevronRight className="h-4 w-4" />
+         </Link>
       </div>
-    </Card>
+    </div>
   );
 }

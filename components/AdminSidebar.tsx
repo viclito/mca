@@ -18,7 +18,8 @@ import {
   Megaphone,
   Info,
   FileText,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Library
 } from "lucide-react";
 
 
@@ -34,8 +35,9 @@ const sidebarItems = [
   { label: "Units", href: "/admin/units", icon: Layers },
   { label: "Content", href: "/admin/content", icon: FileVideo },
   { label: "Forms", href: "/admin/forms", icon: FileText },
-  { label: "Notifications", href: "/admin/notifications", icon: Megaphone },
+  { label : "Notices" , href : "/admin/notifications" , icon : Megaphone } ,
   { label: "Information", href: "/admin/information", icon: FileSpreadsheet },
+  { label: "Books", href: "/admin/books", icon: Library },
 ];
 
 

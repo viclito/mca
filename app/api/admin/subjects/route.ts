@@ -6,6 +6,9 @@ import slugify from "slugify";
 import Semester from "@/lib/models/Semester";
 import Degree from "@/lib/models/Degree";
 
+// Ensure all models are loaded for populate to work
+const models = { Semester, Degree, Subject };
+
 export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);

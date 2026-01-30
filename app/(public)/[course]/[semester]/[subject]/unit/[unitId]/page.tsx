@@ -115,8 +115,8 @@ export default async function UnitDetailsPage({
       />
     <div className="min-h-screen bg-background">
        {/* Header */}
-      <div className="px-6 py-8 border-b bg-muted/10">
-        <div className="max-w-5xl mx-auto">
+      <div className="px-6 pt-6 sm:pt-8 pb-4 sm:pb-6 border-b bg-muted/10">
+        <div className="max-w-6xl mx-auto">
           <Breadcrumbs 
             items={[
               { label: degreeName, href: `/${course}` },
@@ -126,13 +126,13 @@ export default async function UnitDetailsPage({
             ]}
             className="mb-4"
           />
-          <div className="flex flex-col gap-2">
-             <h1 className="text-3xl font-bold tracking-tight">{unit.name}</h1>
+          <div className="flex flex-col gap-1">
+             <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">{unit.name}</h1>
           </div>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-12">
+      <div className="max-w-6xl mx-auto px-6 py-6">
         <UnitContentClient 
           videos={videos}
           pdfs={pdfs}
