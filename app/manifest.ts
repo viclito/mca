@@ -2,9 +2,9 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'MCA Hub - Master of Computer Applications Learning Portal',
-    short_name: 'MCA Hub',
-    description: 'Comprehensive learning portal for MCA students with course materials, videos, and study resources.',
+    name: 'MCA - CSI Institute of Technology, Thovalai',
+    short_name: 'MCA CSIT',
+    description: 'Comprehensive learning portal for MCA students at CSI Institute of Technology, Thovalai.',
     start_url: '/',
     display: 'standalone',
     background_color: '#ffffff',

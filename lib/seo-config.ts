@@ -1,9 +1,9 @@
 // SEO Configuration for MCA Hub Application
 
 export const siteConfig = {
-  name: "MCA Hub",
-  title: "MCA Hub - Master of Computer Applications Learning Portal",
-  description: "Comprehensive learning portal for Master of Computer Applications (MCA) students. Access course materials, study resources, videos, and PDFs for all semesters.",
+  name: "MCA - CSI Institute of Technology, Thovalai",
+  title: "MCA | CSI Institute of Technology, Thovalai",
+  description: "MCA Hub - Comprehensive learning portal for MCA students at CSI Institute of Technology, Thovalai. Access course materials, study resources, videos, and PDFs.",
   url: process.env.NEXT_PUBLIC_SITE_URL || "https://csi-mca.vercel.app",
   ogImage: "/og-image.png",
   keywords: [
@@ -20,12 +20,12 @@ export const siteConfig = {
   ],
   authors: [
     {
-      name: "MCA Hub Team",
-      url: "https://mca.vercel.app/about",
+      name: "CSI Institute of Technology, Thovalai",
+      url: "https://csi-mca.vercel.app/about",
     },
   ],
-  creator: "MCA Hub",
-  publisher: "MCA Hub",
+  creator: "MCA CSI Institute of Technology, Thovalai",
+  publisher: "MCA CSI Institute of Technology, Thovalai",
   language: "en-US",
   locale: "en_US",
 };
@@ -87,8 +87,8 @@ export const defaultMetadata = {
     },
   },
   icons: {
-    icon: "/favicon.ico",
-    shortcut: "/favicon-16x16.png",
+    icon: "/icon.png",
+    shortcut: "/icon.png",
     apple: "/apple-touch-icon.png",
   },
   manifest: "/manifest.json",
