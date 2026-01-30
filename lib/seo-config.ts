@@ -87,8 +87,11 @@ export const defaultMetadata = {
     },
   },
   icons: {
-    icon: "/icon.png",
-    shortcut: "/icon.png",
+    icon: [
+      { url: "/icon.png" },
+      { url: "/favicon.ico", rel: "icon" }
+    ],
+    shortcut: "/favicon.ico",
     apple: "/apple-touch-icon.png",
   },
   manifest: "/manifest.json",
