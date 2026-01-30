@@ -32,12 +32,12 @@ const sidebarItems = [
   { label: "Degrees", href: "/admin/degrees", icon: GraduationCap },
   { label: "Semesters", href: "/admin/semesters", icon: LibraryBig },
   { label: "Subjects", href: "/admin/subjects", icon: BookOpen },
+  { label: "Books", href: "/admin/books", icon: Library },
   { label: "Units", href: "/admin/units", icon: Layers },
   { label: "Content", href: "/admin/content", icon: FileVideo },
   { label: "Forms", href: "/admin/forms", icon: FileText },
   { label : "Notices" , href : "/admin/notifications" , icon : Megaphone } ,
   { label: "Information", href: "/admin/information", icon: FileSpreadsheet },
-  { label: "Books", href: "/admin/books", icon: Library },
 ];
 
 
