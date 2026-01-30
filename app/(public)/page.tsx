@@ -14,6 +14,7 @@ import { useSession } from "next-auth/react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { motion } from "framer-motion";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -215,7 +216,7 @@ export default function Home() {
                     <span className="text-sm font-medium text-gray-600 hidden sm:inline-block">
                         Hi, {session.user.name?.split(' ')[0] || "Student"}
                     </span>
-                    <div className="h-8 w-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold ring-2 ring-white shadow-sm">
+                    <div className="h-8 w-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-xs font-bold ring-2 ring-white shadow-sm">
                         {session.user.name?.[0] || "S"}
                     </div>
                 </div>
@@ -250,42 +251,52 @@ export default function Home() {
          </div>
       </div> */}
 
-      <div className="flex-1 w-full max-w-7xl mx-auto pt-6 md:pt-28 px-6 py-8 space-y-8">
+      <div className="flex-1 w-full max-w-7xl mx-auto pt-4 md:pt-10 px-6 py-8 space-y-8">
         
         {/* Main Notification Banner - Full Width */}
         {mainNotification && (
              <div className="animate-in fade-in slide-in-from-bottom-8 duration-1000">
-                <Card className="rounded-[2rem] overflow-hidden border-0 shadow-2xl bg-black text-white relative min-h-[100px] flex items-center justify-center group cursor-pointer transition-all hover:scale-[1.01]">
+                <Card className="rounded-[2rem] overflow-hidden border-0 shadow-2xl bg-black text-white relative min-h-[150px] flex items-center justify-center group cursor-pointer transition-all hover:scale-[1.01]">
                     <Sheet>
                     <SheetTrigger asChild>
-                    <div className="w-full h-full absolute inset-0 z-20" />
+                        <div className="w-full h-full absolute inset-0 z-10" />
                     </SheetTrigger>
                     
-                    {/* Abstract Apple-style mesh gradient */}
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,_#3e3e3e,_#000000)] opacity-80 pointer-events-none" />
-                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[100px] group-hover:bg-blue-600/30 transition-all duration-700 pointer-events-none" />
+                    {/* Precise background gradient and compact height matching reference */}
+                    <div className="absolute inset-0 bg-black pointer-events-none" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_#064e3b_0%,_transparent_70%)] opacity-60 pointer-events-none" />
                     
-                    <CardContent className="relative z-10 flex flex-col items-center text-center space-y-6 max-w-2xl mx-auto p-8 pointer-events-none">
-                         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10">
-                            <span className="text-xs font-medium tracking-wide uppercase text-white/80">Update</span>
+                    <CardContent className="relative z-10 flex flex-col items-center text-center space-y-5 max-w-4xl mx-auto p-8 md:p-10 pointer-events-none">
+                         <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 backdrop-blur-md border border-white/10">
+                            <span className="text-[9px] font-bold tracking-widest uppercase text-white/40">Update</span>
                          </div>
-                        <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">{mainNotification.title}</h2>
-                        <p className="text-lg text-gray-300 leading-relaxed line-clamp-2">
+                        <h2 className="text-3xl md:text-5xl font-semibold tracking-tight text-white px-4">
+                            {mainNotification.title}
+                        </h2>
+                        <p className="text-sm md:text-base text-gray-300/80 leading-relaxed line-clamp-2 whitespace-pre-wrap max-w-2xl px-6">
                             {mainNotification.message}
                         </p>
                         
-                        <div className="flex flex-wrap items-center justify-center gap-4 pt-4 pointer-events-auto">
-                            <Button size="lg" className="rounded-full bg-white text-black hover:bg-white/90 px-8 text-base h-12 pointer-events-none">
-                                {mainNotification.timetable && mainNotification.timetable.length > 0 ? 'View Schedule' : 'View Details'}
-                            </Button>
+                        <div className="flex flex-wrap items-center justify-center gap-6 pt-2 pointer-events-auto relative z-20">
+                            <SheetTrigger asChild>
+                                <Button size="lg" className="rounded-full bg-white text-black hover:bg-white/90 px-8 text-sm h-12 font-semibold shadow-xl shadow-white/5 active:scale-95 transition-all cursor-pointer">
+                                    View Details
+                                </Button>
+                            </SheetTrigger>
                             {mainNotification.link && (
-                                <a href={mainNotification.link} target="_blank" rel="noreferrer" className="text-blue-400 hover:underline hover:text-blue-300 flex items-center gap-1 relative z-30" onClick={(e) => e.stopPropagation()}>
-                                    Learn more <ExternalLink className="h-4 w-4" />
+                                <a 
+                                    href={mainNotification.link} 
+                                    target="_blank" 
+                                    rel="noreferrer" 
+                                    className="text-emerald-500 hover:text-emerald-400 text-sm font-medium flex items-center gap-1.5 transition-all group"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    Learn more <ExternalLink className="h-3.5 w-3.5 group-hover:translate-x-0.5 transition-transform" />
                                 </a>
                             )}
                         </div>
                     </CardContent>
-                        <SheetContent>
+                        <SheetContent className="overflow-y-auto">
                             <SheetHeader>
                                 <SheetTitle>{mainNotification.type === 'general' ? 'Details' : 'Event'}</SheetTitle>
                                 <SheetDescription>
@@ -320,7 +331,7 @@ export default function Home() {
                                             </div>
                                         )}
                                 {mainNotification.message && (
-                                    <div className="text-sm text-gray-600 leading-relaxed">
+                                    <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
                                         {mainNotification.message}
                                     </div>
                                 )}
@@ -378,10 +389,10 @@ export default function Home() {
                             <div className="group relative bg-white rounded-[2rem] p-6 shadow-sm hover:scale-[1.03] transition-transform duration-300 ease-out cursor-pointer overflow-hidden border border-black/5 h-full">
                                 <div className="flex flex-col h-full justify-between space-y-4">
                                     <div className="space-y-1.5 relative z-10">
-                                        <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 block mb-1">
+                                        <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 block mb-1">
                                             {item.type}
                                         </span>
-                                        <h3 className="text-xl font-bold text-black leading-tight group-hover:text-blue-600 transition-colors line-clamp-3">
+                                        <h3 className="text-xl font-bold text-black leading-tight group-hover:text-emerald-600 transition-colors line-clamp-3">
                                             {item.title}
                                         </h3>
                                         <p className="text-sm text-gray-500 font-medium line-clamp-2">
@@ -408,7 +419,7 @@ export default function Home() {
             <div className="space-y-8">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-2xl font-semibold tracking-tight text-black">Notices</h2>
-                     {otherNotifications.length > 0 && <span className="flex h-2 w-2 rounded-full bg-blue-600" />}
+                     {otherNotifications.length > 0 && <span className="flex h-2 w-2 rounded-full bg-emerald-600" />}
                 </div>
 
                 <div className="bg-white rounded-[2rem] p-6 shadow-sm border border-black/5 min-h-[400px]">
@@ -433,16 +444,15 @@ export default function Home() {
                                                 {/* Dot indicator for type */}
                                                 <span className={cn("h-1.5 w-1.5 rounded-full", {
                                                     "bg-red-500": note.type === 'exam' || note.type === 'fees',
-                                                    "bg-blue-500": note.type === 'general',
+                                                    "bg-emerald-500": note.type === 'viva' || note.type === 'general',
                                                     "bg-purple-500": note.type === 'seminar',
-                                                    "bg-emerald-500": note.type === 'viva',
                                                     "bg-pink-500": note.type === 'image',
                                                 })} />
                                                 <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
                                                     {new Date(note.createdAt).toLocaleDateString()}
                                                 </span>
                                             </div>
-                                            <h3 className="text-base font-semibold text-black leading-snug group-hover:text-blue-600 transition-colors">
+                                            <h3 className="text-base font-semibold text-black leading-snug group-hover:text-emerald-600 transition-colors">
                                                 {note.title}
                                             </h3>
                                             {/* Show image preview for image notifications */}
@@ -466,26 +476,32 @@ export default function Home() {
                                             )}
                                             {/* Show message preview for non-image notifications */}
                                             {note.type !== "image" && note.message && (
-                                                <p className="text-sm text-gray-500 leading-relaxed line-clamp-3">
+                                                <p className="text-sm text-gray-500 leading-relaxed line-clamp-3 whitespace-pre-wrap">
                                                     {note.message}
                                                 </p>
                                             )}
                                         </div>
                                      </div>
                                     
-                                    <div className="flex items-center gap-3 mt-3">
-                                                <button className="text-xs font-medium text-blue-600 hover:underline flex items-center gap-1 pointer-events-none">
-                                                    {note.type === 'exam' || (note.timetable && note.timetable.length > 0) ? 'Exam Schedule' : 'View Details'}
-                                                </button>
+                                    <div className="flex items-center gap-3 mt-4">
+                                        <div className="px-4 py-1.5 rounded-full bg-emerald-600 text-white text-[11px] font-bold uppercase tracking-tight hover:bg-emerald-700 transition-all duration-300 shadow-sm active:scale-95">
+                                            {note.type === 'exam' || (note.timetable && note.timetable.length > 0) ? 'Exam Schedule' : 'View Details'}
+                                        </div>
                                         {note.link && (
-                                            <a href={note.link} target="_blank" rel="noreferrer" className="text-xs font-medium text-blue-600 hover:underline flex items-center gap-1 relative z-30" onClick={(e) => e.stopPropagation()}>
-                                                View Link <ExternalLink className="h-3 w-3" />
+                                            <a 
+                                                href={note.link} 
+                                                target="_blank" 
+                                                rel="noreferrer" 
+                                                className="h-7 px-3 rounded-full bg-gray-100 text-gray-700 text-[11px] font-medium flex items-center gap-1.5 hover:bg-emerald-600 hover:text-white transition-all relative z-30 active:scale-95" 
+                                                onClick={(e) => e.stopPropagation()}
+                                            >
+                                                Link <ExternalLink className="h-3 w-3 text-emerald-600" />
                                             </a>
                                         )}
                                     </div>
                                 </div>
                                     </SheetTrigger>
-                                    <SheetContent>
+                                    <SheetContent className="overflow-y-auto">
                                         <SheetHeader>
                                             <SheetTitle>{note.title}</SheetTitle>
                                             <SheetDescription>{note.message}</SheetDescription>
