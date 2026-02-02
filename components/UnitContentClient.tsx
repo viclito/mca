@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import { SearchInput } from "@/components/SearchInput";
 import { StudyMaterialCard } from "@/components/StudyMaterialCard";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Video as VideoIcon, FileText, ChevronRight, ExternalLink } from "lucide-react";
+import { Video as VideoIcon, FileText, ChevronRight, ExternalLink, StickyNote } from "lucide-react";
 
 interface Content {
   _id: string;
@@ -18,10 +18,11 @@ interface Content {
 interface UnitContentClientProps {
   videos: Content[];
   pdfs: Content[];
+  notes: Content[];
   basePath: string;
 }
 
-export function UnitContentClient({ videos, pdfs, basePath }: UnitContentClientProps) {
+export function UnitContentClient({ videos, pdfs, notes, basePath }: UnitContentClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
 
   const filteredVideos = searchQuery
@@ -35,6 +36,12 @@ export function UnitContentClient({ videos, pdfs, basePath }: UnitContentClientP
         p.title.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : pdfs;
+
+  const filteredNotes = searchQuery
+    ? notes.filter((n) =>
+        n.title.toLowerCase().includes(searchQuery.toLowerCase())
+      )
+    : notes;
 
   const getThumbnailUrl = (url: string) => {
     // YouTube Regex
@@ -72,6 +79,18 @@ export function UnitContentClient({ videos, pdfs, basePath }: UnitContentClientP
                 <span>Videos</span>
                 <span className="ml-1 rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">
                   {filteredVideos.length}
+                </span>
+              </div>
+            </TabsTrigger>
+            <TabsTrigger 
+              value="notes" 
+              className="relative h-11 rounded-none border-b-2 border-transparent bg-transparent px-2 pb-3.5 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-yellow-500 data-[state=active]:text-yellow-600 data-[state=active]:shadow-none"
+            >
+              <div className="flex items-center gap-2">
+                <StickyNote className="h-4 w-4" />
+                <span>Notes</span>
+                <span className="ml-1 rounded-full bg-yellow-500/10 px-2 py-0.5 text-[11px] font-bold text-yellow-600">
+                  {filteredNotes.length}
                 </span>
               </div>
             </TabsTrigger>
@@ -154,6 +173,32 @@ export function UnitContentClient({ videos, pdfs, basePath }: UnitContentClientP
                       </a>
                     );
                   })}
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="notes" className="mt-0 animate-in fade-in slide-in-from-bottom-3 duration-500 outline-none">
+              {filteredNotes.length === 0 ? (
+                <div className="text-center py-16 border rounded-xl border-dashed bg-muted/5">
+                  <p className="text-muted-foreground">
+                    {searchQuery
+                      ? `No notes found for "${searchQuery}"`
+                      : "No notes available for this unit yet."}
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-px overflow-hidden rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm shadow-sm">
+                  {filteredNotes.map((note, idx) => (
+                    <StudyMaterialCard
+                      key={note._id}
+                      title={note.title}
+                      type="note"
+                      url={note.url}
+                      contentId={note._id}
+                      basePath={basePath}
+                      isLast={idx === filteredNotes.length - 1}
+                    />
+                  ))}
                 </div>
               )}
             </TabsContent>

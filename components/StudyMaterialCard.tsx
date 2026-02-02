@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { ExternalLink, BookOpen, FileText, Download, ChevronRight } from "lucide-react";
+import { ExternalLink, BookOpen, FileText, Download, ChevronRight, StickyNote } from "lucide-react";
 
 interface StudyMaterialCardProps {
   title: string;
-  type: "video" | "pdf";
+  type: "video" | "pdf" | "note";
   url: string;
   contentId: string;
   basePath: string; // e.g., /course/sem/sub
@@ -30,20 +30,22 @@ export function StudyMaterialCard({ title, type, url, contentId, basePath, isLas
     )}>
       <div className="flex items-center gap-4 min-w-0">
         <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/5 text-emerald-600 group-hover:bg-emerald-500 group-hover:text-white transition-colors shrink-0">
-          <FileText className="h-5 w-5" />
+          {type === 'note' ? <StickyNote className="h-5 w-5" /> : <FileText className="h-5 w-5" />}
         </div>
         <div className="min-w-0">
           <h3 className="font-semibold text-foreground group-hover:text-emerald-700 transition-colors truncate pr-4">{title}</h3>
-          <p className="text-[12px] text-muted-foreground mt-0.5 uppercase tracking-wider font-medium">PDF Document</p>
+          <p className="text-[12px] text-muted-foreground mt-0.5 uppercase tracking-wider font-medium">
+            {type === 'note' ? 'Study Note' : 'PDF Document'}
+          </p>
         </div>
       </div>
       
       <div className="flex items-center gap-2 shrink-0">
-         <Button variant="ghost" size="icon" asChild title="Open in Drive" className="h-9 w-9 text-muted-foreground/50 hover:text-emerald-600 hover:bg-emerald-500/10">
+         {/* <Button variant="ghost" size="icon" asChild title="Open in Drive" className="h-9 w-9 text-muted-foreground/50 hover:text-emerald-600 hover:bg-emerald-500/10">
               <a href={url} target="_blank" rel="noopener noreferrer">
                   <ExternalLink className="h-4 w-4" />
               </a>
-         </Button>
+         </Button> */}
 
          <Button variant="ghost" size="icon" asChild title="Download PDF" className="h-9 w-9 text-muted-foreground/50 hover:text-emerald-600 hover:bg-emerald-500/10">
             <a href={getDownloadUrl(url)} download target="_blank" rel="noopener noreferrer">
@@ -51,14 +53,16 @@ export function StudyMaterialCard({ title, type, url, contentId, basePath, isLas
             </a>
          </Button>
          
-         <Link 
-           href={`${basePath}/read/${contentId}`}
+         <a 
+           href={url}
+           target="_blank"
+           rel="noopener noreferrer"
            className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500 hover:text-white transition-all text-sm font-semibold ml-2"
          >
            <BookOpen className="h-4 w-4" />
            <span className="hidden sm:inline">Read Online</span>
            <ChevronRight className="h-4 w-4" />
-         </Link>
+         </a>
       </div>
     </div>
   );

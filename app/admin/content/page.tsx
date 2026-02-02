@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/sheet";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Loader2, Trash, Pencil, FileText, Video as VideoIcon, Filter, X } from "lucide-react";
+import { Plus, Loader2, Trash, Pencil, FileText, Video as VideoIcon, Filter, X, StickyNote } from "lucide-react";
 import { useDegrees, Degree } from "@/hooks/admin/use-degrees";
 import { useSemesters, Semester } from "@/hooks/admin/use-semesters";
 import { useSubjects, Subject } from "@/hooks/admin/use-subjects";
@@ -32,7 +32,7 @@ export default function ContentPage() {
   // Create State
   const [isCreating, setIsCreating] = useState(false);
   const [title, setTitle] = useState("");
-  const [type, setType] = useState<"video"|"pdf">("video");
+  const [type, setType] = useState<"video"|"pdf"|"note">("video");
   const [url, setUrl] = useState("");
   const [selectedDegree, setSelectedDegree] = useState("");
   const [selectedSemester, setSelectedSemester] = useState("");
@@ -42,7 +42,7 @@ export default function ContentPage() {
   // Edit State
   const [editingContent, setEditingContent] = useState<Content | null>(null);
   const [editTitle, setEditTitle] = useState("");
-  const [editType, setEditType] = useState<"video"|"pdf">("video");
+  const [editType, setEditType] = useState<"video"|"pdf"|"note">("video");
   const [editUrl, setEditUrl] = useState("");
   const [editDegreeId, setEditDegreeId] = useState("");
   const [editSemesterId, setEditSemesterId] = useState("");
@@ -282,6 +282,7 @@ export default function ContentPage() {
                         <SelectContent>
                              <SelectItem value="video">Video</SelectItem>
                              <SelectItem value="pdf">PDF</SelectItem>
+                             <SelectItem value="note">Note</SelectItem>
                         </SelectContent>
                       </Select>
                    </div>
@@ -391,6 +392,7 @@ export default function ContentPage() {
                         <SelectContent>
                              <SelectItem value="video">Video</SelectItem>
                              <SelectItem value="pdf">PDF</SelectItem>
+                             <SelectItem value="note">Note</SelectItem>
                         </SelectContent>
                       </Select>
                    </div>
@@ -572,7 +574,7 @@ export default function ContentPage() {
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                         <CardTitle className="font-semibold text-lg line-clamp-1">{c.title}</CardTitle>
                         <div className="flex items-center gap-2">
-                            {c.type === "video" ? <VideoIcon className="h-4 w-4 text-blue-500" /> : <FileText className="h-4 w-4 text-red-500" />}
+                            {c.type === "video" ? <VideoIcon className="h-4 w-4 text-blue-500" /> : c.type === "note" ? <StickyNote className="h-4 w-4 text-yellow-500" /> : <FileText className="h-4 w-4 text-red-500" />}
                             <div className="flex items-center gap-1">
                                 <Button 
                                     variant="ghost" 

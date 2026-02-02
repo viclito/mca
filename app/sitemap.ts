@@ -91,23 +91,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         priority: 0.6,
       }));
 
-    // Generate content pages
-    const contentPages: MetadataRoute.Sitemap = content
-      .filter((c: any) => c.unitId?.subjectId?.semesterId?.degreeId)
-      .map((cont: any) => ({
-        url: `${baseUrl}/${cont.unitId.subjectId.semesterId.degreeId.slug}/${cont.unitId.subjectId.semesterId.slug}/${cont.unitId.subjectId.slug}/read/${cont._id}`,
-        lastModified: cont.updatedAt || new Date(),
-        changeFrequency: 'monthly' as const,
-        priority: 0.5,
-      }));
-
     return [
       ...staticPages,
       ...degreePages,
       ...semesterPages,
       ...subjectPages,
       ...unitPages,
-      ...contentPages,
     ];
   } catch (error) {
     console.error('Error generating sitemap:', error);

@@ -97,6 +97,7 @@ export default async function UnitDetailsPage({
 
   const videos = content.filter((c: any) => c.type === "video");
   const pdfs = content.filter((c: any) => c.type === "pdf");
+  const notes = content.filter((c: any) => c.type === "note");
 
   return (
     <>
@@ -135,6 +136,7 @@ export default async function UnitDetailsPage({
         <UnitContentClient 
           videos={videos}
           pdfs={pdfs}
+          notes={notes}
           basePath={`/${course}/${semester}/${subject}`}
         />
       </div>

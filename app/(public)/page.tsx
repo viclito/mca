@@ -385,7 +385,7 @@ export default function Home() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
                         {recentContent.map((item) => (
-                         <Link key={item._id} href={`/${item.unitId.subjectId.semesterId.degreeId.slug}/${item.unitId.subjectId.semesterId.slug}/${item.unitId.subjectId.slug}/read/${item._id}`}>
+                         <a key={item._id} href={item.url} target="_blank" rel="noopener noreferrer" className="block h-full">
                             <div className="group relative bg-white rounded-[2rem] p-6 shadow-sm hover:scale-[1.03] transition-transform duration-300 ease-out cursor-pointer overflow-hidden border border-black/5 h-full">
                                 <div className="flex flex-col h-full justify-between space-y-4">
                                     <div className="space-y-1.5 relative z-10">
@@ -409,7 +409,7 @@ export default function Home() {
                                     </div>
                                 </div>
                             </div>
-                         </Link>
+                         </a>
                         ))}
                     </div>
                 )}

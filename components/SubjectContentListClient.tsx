@@ -183,11 +183,11 @@ function NoteCard({ note, courseId, semesterId, subjectId }: { note: Content, co
             <CardContent className="mt-auto">
                 <CardDescription className="mb-6 line-clamp-2 text-sm leading-relaxed">{note.description}</CardDescription>
                 <div className="flex items-center gap-2">
-                    <Link href={`/${courseId}/${semesterId}/${subjectId}/read/${note.id}`} className="flex-1">
+                    <a href={note.url} target="_blank" rel="noopener noreferrer" className="flex-1">
                         <Button className="w-full gap-2 group-hover:!bg-zinc-900 group-hover:!text-white dark:group-hover:!bg-zinc-100 dark:group-hover:!text-zinc-900 transition-all duration-300 shadow-sm" variant="secondary">
                             Read Now
                         </Button>
-                    </Link>
+                    </a>
                         <Button variant="outline" size="icon" className="h-10 w-10 shrink-0 bg-background hover:bg-zinc-100 hover:text-zinc-900 border-border/60 transition-colors" title="Download PDF">
                         <Download className="h-4 w-4" />
                     </Button>

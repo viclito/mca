@@ -95,9 +95,12 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json(newContent, { status: 201 });
-  } catch (error) {
-    console.error(error);
-    return NextResponse.json({ message: "Internal Server Error" }, { status: 500 });
+  } catch (error: any) {
+    console.error('[Content POST Error]:', error);
+    return NextResponse.json({ 
+        message: "Internal Server Error", 
+        error: error.message 
+    }, { status: 500 });
   }
 }
 

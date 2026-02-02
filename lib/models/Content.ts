@@ -8,7 +8,7 @@ const ContentSchema = new Schema(
     },
     type: {
       type: String,
-      enum: ["video", "pdf"],
+      enum: ["video", "pdf", "note"],
       required: true,
     },
     url: {
@@ -23,6 +23,11 @@ const ContentSchema = new Schema(
   },
   { timestamps: true }
 );
+
+// Force delete model in development to enable schema changes to take effect
+if (process.env.NODE_ENV === "development" && models.Content) {
+  delete models.Content;
+}
 
 const Content = models.Content || model("Content", ContentSchema);
 

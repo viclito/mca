@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 export interface Content {
   _id: string;
   title: string;
-  type: "video" | "pdf";
+  type: "video" | "pdf" | "note";
   url: string;
   unitId: {
     _id: string;
@@ -59,7 +59,7 @@ export function useCreateContent() {
       unitId,
     }: {
       title: string;
-      type: "video" | "pdf";
+      type: "video" | "pdf" | "note";
       url: string;
       unitId: string;
     }) => {
@@ -89,7 +89,7 @@ export function useUpdateContent() {
     }: {
       id: string;
       title: string;
-      type: "video" | "pdf";
+      type: "video" | "pdf" | "note";
       url: string;
       unitId: string;
     }) => {
