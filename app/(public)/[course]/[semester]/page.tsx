@@ -50,15 +50,16 @@ export async function generateMetadata({ params }: { params: Promise<{ course: s
   const degreeName = typeof semesterData.degreeId === 'object' ? semesterData.degreeId.name : course.toUpperCase();
 
   return generatePageMetadata({
-    title: `${semesterData.name} - ${degreeName}`,
-    description: `Access study materials, notes, and resources for ${semesterData.name} of the ${degreeName} program. Exploring subjects like ${data.subjects.slice(0, 3).map((s: any) => s.name).join(', ')}.`,
+    title: `${semesterData.name} - ${degreeName} | Study Materials`,
+    description: `Access comprehensive study materials, notes, and resources for ${semesterData.name} of ${degreeName} at CSI Institute of Technology. Including subjects like ${data.subjects.slice(0, 3).map((s: any) => s.name).join(', ')}.`,
     keywords: [
       semesterData.name,
       degreeName,
+      "MCA Thovalai",
+      "CSIT Thovalai MCA",
+      "Semester Notes",
       "Study Materials",
-      "MCA Notes",
-      "Computer Applications",
-      ...data.subjects.map((s: any) => s.name)
+      ...data.subjects.slice(0, 5).map((s: any) => s.name)
     ],
     path: `/${course}/${semester}`,
   });

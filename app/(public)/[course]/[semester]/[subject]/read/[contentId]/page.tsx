@@ -67,15 +67,15 @@ export async function generateMetadata({ params }: ReadPageProps): Promise<Metad
   const degreeName = typeof content.unitId?.subjectId?.semesterId?.degreeId === 'object' ? content.unitId.subjectId.semesterId.degreeId.name : course.toUpperCase();
 
   return generatePageMetadata({
-    title: `${content.title} - ${subjectName} | ${degreeName}`,
-    description: `Read and study ${content.title} from ${subjectName} course. Quality educational material for ${degreeName} students.`,
+    title: `${content.title} - ${subjectName} Study Material`,
+    description: `Read and study ${content.title} from ${subjectName} at CSI Institute of Technology, Thovalai. High-quality ${content.type} resource for ${degreeName} students.`,
     keywords: [
       content.title,
-      content.type,
-      subjectName,
-      degreeName,
-      "MCA Study Material",
-      "Educational Resource"
+      "MCA Thovalai",
+      "CSIT Thovalai MCA",
+      "MCA HUB",
+      "Study Materials",
+      "Learning Resource"
     ],
     path: `/${course}/${semester}/${subject}/read/${contentId}`,
     image: content.type === 'video' ? `https://img.youtube.com/vi/${content.url.split('v=')[1]?.split('&')[0]}/maxresdefault.jpg` : undefined

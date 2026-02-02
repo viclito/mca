@@ -9,23 +9,29 @@ export const siteConfig = {
   keywords: [
     "MCA",
     "Master of Computer Applications",
+    "CSI Institute of Technology",
+    "CSI Institute of Technology Thovalai",
+    "CSIT Thovalai MCA",
+    "MCA Study Materials",
     "Computer Science Education",
     "Online Learning",
     "Programming Courses",
-    "Data Science",
+    "Anna University MCA",
+    "MCA Notes PDFs",
     "Software Engineering",
     "Web Development",
     "Database Management",
-    "Algorithm Studies"
+    "Algorithm Studies",
+    "MCA HUB"
   ],
   authors: [
     {
-      name: "CSI Institute of Technology, Thovalai",
+      name: "MCA Department, CSI Institute of Technology, Thovalai",
       url: "https://csi-mca.vercel.app/about",
     },
   ],
-  creator: "MCA CSI Institute of Technology, Thovalai",
-  publisher: "MCA CSI Institute of Technology, Thovalai",
+  creator: "CSI Institute of Technology, Thovalai",
+  publisher: "CSI Institute of Technology, Thovalai",
   language: "en-US",
   locale: "en_US",
 };

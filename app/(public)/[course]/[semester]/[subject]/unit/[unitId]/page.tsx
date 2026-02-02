@@ -52,15 +52,14 @@ export async function generateMetadata({ params }: { params: Promise<{ course: s
 
   return generatePageMetadata({
     title: `${unit.name} - ${subjectName} | ${degreeName}`,
-    description: `Study ${unit.name} of ${subjectName}. Access ${data.content.length} topics including videos and PDF notes. Essential learning resource for ${degreeName} students.`,
+    description: `Detailed study topics for ${unit.name} in ${subjectName} at CSI Institute of Technology. Access ${data.content.length} specialized topics, video lectures and PDF notes for ${degreeName} students.`,
     keywords: [
       unit.name,
-      subjectName,
-      degreeName,
-      "Topic Wise Notes",
-      "Video Lectures",
-      "PDF Resources",
-      ...data.content.map((c: any) => c.title)
+      "MCA Thovalai",
+      "CSIT Thovalai MCA",
+      "Unit Wise Notes",
+      "Topic Lectures",
+      ...data.content.slice(0, 5).map((c: any) => c.title)
     ],
     path: `/${course}/${semester}/${subject}/unit/${unitId}`,
   });

@@ -56,15 +56,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { degree, semesters } = data;
 
   return generatePageMetadata({
-    title: `${degree.name} - Course Curriculum`,
-    description: `Explore the complete curriculum for ${degree.name}. Access ${semesters.length} semesters of comprehensive study materials, resources, and educational content.`,
+    title: `${degree.name} - Study Materials & Curriculum`,
+    description: `Access the complete ${degree.name} curriculum at CSI Institute of Technology, Thovalai. Study materials, notes, and resources for all ${semesters.length} semesters of the Masters in Computer Applications program.`,
     keywords: [
       degree.name,
-      "MCA Course",
-      "Curriculum",
-      "Semesters",
-      "Study Materials",
-      "Computer Applications"
+      "MCA Thovalai",
+      "CSIT Thovalai MCA",
+      "MCA Study Materials",
+      "MCA Curriculum",
+      "Anna University MCA",
+      "Masters in Computer Applications"
     ],
     path: `/${course}`,
   });
