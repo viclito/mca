@@ -273,6 +273,7 @@ export default function ContentPage() {
                <div className="pt-4 border-t border-border/50 space-y-4">
                    <div className="space-y-2">
                       <label className="text-sm font-medium">Title</label>
+                      <Input placeholder="Content Title" value={title} onChange={(e) => setTitle(e.target.value)} />
                    </div>
                    <div className="space-y-2">
                       <label className="text-sm font-medium">Type</label>
