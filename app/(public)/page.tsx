@@ -123,12 +123,12 @@ export default function Home() {
         if (session?.user && (!session.user.name || session.user.name === "Student")) {
             // Session says no name. Let's double check with the DB just in case session is stale.
             try {
-                const res = await fetch("/api/user/profile");
+                const res = await fetch("/api/user/me");
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.user?.name && data.user.name !== "Student") {
+                    if (data.name && data.name !== "Student") {
                         // DB has name! Session is stale. Update it.
-                        await update({ name: data.user.name });
+                        await update({ name: data.name });
                         return; // Don't show modal
                     }
                 }

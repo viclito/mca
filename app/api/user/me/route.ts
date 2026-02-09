@@ -12,7 +12,7 @@ export async function GET(req: Request) {
 
     await dbConnect();
 
-    const user = await User.findById(session.user.id).select("batch degree college");
+    const user = await User.findById(session.user.id).select("name batch degree college");
 
     if (!user) {
         return NextResponse.json({ message: "User not found" }, { status: 404 });
