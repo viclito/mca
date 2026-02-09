@@ -67,7 +67,7 @@ export default function AboutPage() {
               MCA Hub was born out of the need for a centralized, modern repository for MCA academic resources. 
               We believe that every student deserves access to organized knowledge.
             </p>
-            <div className="flex flex-wrap gap-4 pt-4">
+            {/* <div className="flex flex-wrap gap-4 pt-4">
               <div className="flex items-center gap-2 bg-white dark:bg-zinc-800 px-4 py-2 rounded-full border border-zinc-200 dark:border-white/10 hover:shadow-md transition-all cursor-default">
                 <Shield className="h-4 w-4 text-blue-500" />
                 <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">Open Source</span>
@@ -76,13 +76,13 @@ export default function AboutPage() {
                 <Github className="h-4 w-4 text-zinc-900 dark:text-zinc-400" />
                 <span className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">GitHub Project</span>
               </div>
-            </div>
+            </div> */}
           </div>
         </div>
 
         {/* Key Contributors Section - Separate Box */}
         <div className="bg-white dark:bg-black p-10 rounded-[2.5rem] border border-zinc-200 dark:border-white/5 shadow-lg">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-8">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-8">
             <div className="space-y-2">
               <h3 className="text-2xl font-bold flex items-center gap-3 text-zinc-900 dark:text-zinc-100">
                 <Users className="h-6 w-6 text-blue-500" />
@@ -91,14 +91,38 @@ export default function AboutPage() {
               <p className="text-zinc-500 dark:text-zinc-400">The talented individuals behind the data and platform.</p>
             </div>
             
-            <div className="flex items-center gap-6 p-6 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border border-zinc-100 dark:border-white/5">
-              <div className="h-14 w-14 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-black flex items-center justify-center text-xl font-bold shrink-0 shadow-xl border-4 border-white dark:border-zinc-800">
-                FS
+            <div className="space-y-4">
+              <div className="flex items-center gap-6 p-6 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border border-zinc-100 dark:border-white/5">
+                <div className="h-14 w-14 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-black flex items-center justify-center text-xl font-bold shrink-0 shadow-xl border-4 border-white dark:border-zinc-800">
+                  FS
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-zinc-900 dark:text-white text-lg leading-none">M Fathima Sana</h4>
+                  <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest py-1">Data Management & Notifications</p>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">Handles uploading data and site-wide update notifications.</p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <h4 className="font-bold text-zinc-900 dark:text-white text-lg leading-none">M Fathima Sana</h4>
-                <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest py-1">Data Management & Notifications</p>
-                <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">Handles uploading data and site-wide update notifications.</p>
+
+              <div className="flex items-center gap-6 p-6 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border border-zinc-100 dark:border-white/5">
+                <div className="h-14 w-14 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-black flex items-center justify-center text-xl font-bold shrink-0 shadow-xl border-4 border-white dark:border-zinc-800">
+                  LS
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-zinc-900 dark:text-white text-lg leading-none">Libin Sharma</h4>
+                  <p className="text-xs font-bold text-purple-600 dark:text-purple-400 uppercase tracking-widest py-1">Resource Management & Content</p>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">Responsible for uploading and managing reference books, question papers, and study materials.</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-6 p-6 bg-zinc-50 dark:bg-zinc-900/50 rounded-3xl border border-zinc-100 dark:border-white/5">
+                <div className="h-14 w-14 rounded-full bg-zinc-900 dark:bg-white text-white dark:text-black flex items-center justify-center text-xl font-bold shrink-0 shadow-xl border-4 border-white dark:border-zinc-800">
+                  B
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-zinc-900 dark:text-white text-lg leading-none">Blessy</h4>
+                  <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-widest py-1">Student Representative & Data</p>
+                  <p className="text-sm text-zinc-500 dark:text-zinc-400 leading-relaxed">Facilitates data collection from students and ensures smooth communication as class representative.</p>
+                </div>
               </div>
             </div>
           </div>

@@ -7,7 +7,7 @@ import { transporter } from "@/lib/mail";
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password } = await req.json();
+    const { name, email, password, batch, degree, college } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json(
@@ -38,6 +38,9 @@ export async function POST(req: Request) {
       name,
       email,
       password: hashedPassword,
+      batch,
+      degree: degree || "MCA",
+      college: college || "CSI Institute of Technology, Thovalai",
       role: "student",
       isApproved: false,
       isEmailVerified: false,

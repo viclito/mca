@@ -20,10 +20,25 @@ export default function StudentRegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [batch, setBatch] = useState("");
+  const [degree, setDegree] = useState("MCA");
+  const [college, setCollege] = useState("CSI Institute of Technology, Thovalai");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Generate batch options
+  const currentYear = new Date().getFullYear();
+  const startYear = 2025;
+  const batchOptions = [];
+  
+  // Ensure we cover from 2025 up to at least current year + 1
+  const endYear = Math.max(currentYear + 1, 2028); 
+
+  for (let y = startYear; y <= endYear; y++) {
+      batchOptions.push(`${y}-${y + 2}`);
+  }
 
   const registerMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -46,6 +61,7 @@ export default function StudentRegisterPage() {
       setEmail("");
       setPassword("");
       setConfirmPassword("");
+      setBatch("");
       setTimeout(() => {
         router.push("/student/login");
       }, 5000);
@@ -65,7 +81,12 @@ export default function StudentRegisterPage() {
       return;
     }
 
-    registerMutation.mutate({ name, email, password });
+    if (!batch) {
+        setError("Please select your batch");
+        return;
+    }
+
+    registerMutation.mutate({ name, email, password, batch, degree, college });
   }
 
   return (
@@ -109,6 +130,44 @@ export default function StudentRegisterPage() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
+            
+            <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                    <select 
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={batch}
+                        onChange={(e) => setBatch(e.target.value)}
+                        required
+                    >
+                        <option value="" disabled>Select Batch</option>
+                        {batchOptions.map(opt => (
+                            <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                    </select>
+                </div>
+                <div className="space-y-2">
+                    <select 
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        value={degree}
+                        onChange={(e) => setDegree(e.target.value)}
+                        disabled
+                    >
+                        <option value="MCA">MCA</option>
+                    </select>
+                </div>
+            </div>
+
+            <div className="space-y-2">
+                <select 
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    value={college}
+                    onChange={(e) => setCollege(e.target.value)}
+                    disabled
+                >
+                    <option value="CSI Institute of Technology, Thovalai">CSI Institute of Technology, Thovalai</option>
+                </select>
+            </div>
+
             <div className="space-y-2">
               <Input
                 type="password"

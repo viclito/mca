@@ -2,13 +2,14 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ArrowLeft, BookOpen, Layers, ChevronRight, FileText, Video as VideoIcon } from "lucide-react";
+import { ArrowLeft, BookOpen, Layers, ChevronRight, FileText, Video as VideoIcon, FileQuestion } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import dbConnect from "@/lib/db";
 import Subject from "@/lib/models/Subject";
 import Unit from "@/lib/models/Unit";
 import Content from "@/lib/models/Content";
 import Book from "@/lib/models/Book";
+import QuestionPaper from "@/lib/models/QuestionPaper";
 import { Metadata } from "next";
 import { generatePageMetadata } from "@/lib/seo-config";
 import { generateBreadcrumbSchema, generateLearningResourceSchema } from "@/lib/structured-data";
@@ -38,8 +39,9 @@ async function getSubjectData(subjectSlug: string) {
     }));
 
     const books = await Book.find({ subjectId: subject._id }).sort({ createdAt: -1 });
+    const questionPapers = await QuestionPaper.find({ subjectId: subject._id }).sort({ year: -1 });
 
-    return { subject, units: unitsWithCounts, books };
+    return { subject, units: unitsWithCounts, books, questionPapers };
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ course: string; semester: string; subject: string }> }): Promise<Metadata> {
@@ -85,7 +87,7 @@ export default async function SubjectDetailsPage({
 
   if (!data) return notFound();
 
-  const { subject, units, books } = data;
+  const { subject, units, books, questionPapers } = data;
   const semesterName = typeof subject.semesterId === 'object' ? subject.semesterId.name : semester.toUpperCase();
   const degreeName = typeof subject.semesterId === 'object' && typeof subject.semesterId.degreeId === 'object' ? subject.semesterId.degreeId.name : course.toUpperCase();
 
@@ -165,6 +167,21 @@ export default async function SubjectDetailsPage({
                 )}
               </div>
             </TabsTrigger>
+            <TabsTrigger 
+              value="papers" 
+              className="relative h-11 rounded-none border-b-2 border-transparent bg-transparent px-2 pb-3 pt-2 font-semibold text-muted-foreground shadow-none transition-none data-[state=active]:border-orange-500 data-[state=active]:text-orange-600 data-[state=active]:shadow-none disabled:opacity-50"
+              disabled={!questionPapers || questionPapers.length === 0}
+            >
+              <div className="flex items-center gap-2">
+                <FileQuestion className="h-4 w-4" />
+                <span>Question Papers</span>
+                {questionPapers && questionPapers.length > 0 && (
+                  <span className="ml-1 rounded-full bg-orange-500/10 px-2 py-0.5 text-[11px] font-bold text-orange-600">
+                    {questionPapers.length}
+                  </span>
+                )}
+              </div>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="units" className="mt-4 animate-in fade-in slide-in-from-bottom-3 duration-500 outline-none">
@@ -228,6 +245,40 @@ export default async function SubjectDetailsPage({
                       </div>
                     </div>
                     <ExternalLink className="h-4 w-4 text-muted-foreground/30 group-hover:text-emerald-500 transition-all" />
+                  </a>
+                ))}
+              </div>
+            </TabsContent>
+          )}
+
+          {questionPapers && questionPapers.length > 0 && (
+            <TabsContent value="papers" className="mt-4 animate-in fade-in slide-in-from-bottom-3 duration-500 outline-none">
+              <div className="space-y-px overflow-hidden rounded-xl border border-border/50 bg-card/30 backdrop-blur-sm shadow-sm">
+                {questionPapers.map((paper: any, idx: number) => (
+                  <a 
+                    key={paper._id.toString()} 
+                    href={paper.link} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "flex items-center justify-between p-4 transition-all duration-200 hover:bg-orange-500/5 group",
+                      idx !== questionPapers.length - 1 && "border-b border-border/40"
+                    )}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-500/5 text-orange-600 group-hover:bg-orange-500 group-hover:text-white transition-colors">
+                        <FileQuestion className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-foreground group-hover:text-orange-700 transition-colors">{paper.title}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge variant="outline" className="h-5 px-1.5 text-[10px] uppercase tracking-wider border-orange-200 text-orange-700 bg-orange-50/50">
+                            {paper.year}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                    <ExternalLink className="h-4 w-4 text-muted-foreground/30 group-hover:text-orange-500 transition-all" />
                   </a>
                 ))}
               </div>

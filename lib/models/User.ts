@@ -44,6 +44,17 @@ const UserSchema = new Schema(
     resetTokenExpiry: {
       type: Date,
     },
+    batch: {
+      type: String, // e.g., "2025-2027"
+    },
+    degree: {
+      type: String, // e.g., "MCA"
+      default: "MCA",
+    },
+    college: {
+      type: String, // e.g., "CSI Institute of Technology, Thovalai"
+      default: "CSI Institute of Technology, Thovalai",
+    },
   },
   { timestamps: true }
 );

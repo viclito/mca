@@ -19,7 +19,8 @@ import {
   Info,
   FileText,
   FileSpreadsheet,
-  Library
+  Library,
+  FileQuestion
 } from "lucide-react";
 
 
@@ -37,6 +38,7 @@ const sidebarItems = [
   { label: "Content", href: "/admin/content", icon: FileVideo },
   { label: "Forms", href: "/admin/forms", icon: FileText },
   { label : "Notices" , href : "/admin/notifications" , icon : Megaphone } ,
+  { label: "Question Papers", href: "/admin/question-papers", icon: FileQuestion },
   { label: "Information", href: "/admin/information", icon: FileSpreadsheet },
 ];
 

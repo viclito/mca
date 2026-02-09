@@ -4,6 +4,7 @@ import { SessionProvider } from "next-auth/react";
 import GoogleAnalyticsTracker from "@/components/GoogleAnalyticsTracker";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { useState } from "react";
+import CompleteProfileModal from "@/components/CompleteProfileModal";
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(
@@ -22,7 +23,10 @@ export default function Providers({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
       <GoogleAnalyticsTracker />
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <CompleteProfileModal />
+        {children}
+      </QueryClientProvider>
     </SessionProvider>
   );
 }
