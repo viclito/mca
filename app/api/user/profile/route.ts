@@ -10,9 +10,17 @@ export async function PUT(req: Request) {
       return NextResponse.json({ message: "Unauthorized" }, { status: 401 });
     }
 
-    const { batch, degree, college } = await req.json();
+    const body = await req.json();
+    const { name, batch, degree, college } = body;
 
-    if (!batch || !degree || !college) {
+    // Build update object dynamically
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (batch) updateData.batch = batch;
+    if (degree) updateData.degree = degree;
+    if (college) updateData.college = college;
+
+    if (Object.keys(updateData).length === 0) {
       return NextResponse.json({ message: "Missing required fields" }, { status: 400 });
     }
 
@@ -20,7 +28,7 @@ export async function PUT(req: Request) {
 
     const updatedUser = await User.findByIdAndUpdate(
       session.user.id,
-      { batch, degree, college },
+      updateData,
       { new: true }
     );
 

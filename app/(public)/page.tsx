@@ -118,6 +118,8 @@ export default function Home() {
   const [newName, setNewName] = useState("");
   const [updatingName, setUpdatingName] = useState(false);
 
+
+
   useEffect(() => {
     const checkName = async () => {
         if (session?.user && (!session.user.name || session.user.name === "Student")) {
@@ -126,7 +128,8 @@ export default function Home() {
                 const res = await fetch("/api/user/me");
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.name && data.name !== "Student") {
+                    if (data?.name && data?.name !== "Student") {
+                        console.log("data   :" ,data.name)
                         // DB has name! Session is stale. Update it.
                         await update({ name: data.name });
                         return; // Don't show modal
@@ -149,6 +152,7 @@ export default function Home() {
     if (!newName.trim()) return;
     setUpdatingName(true);
     try {
+        console.log(newName);
         const res = await fetch("/api/user/profile", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
