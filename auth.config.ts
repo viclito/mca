@@ -41,16 +41,26 @@ export const authConfig = {
         if (token.name && session.user) {
             session.user.name = token.name as string;
         }
+        if (token.tempPermissions && session.user) {
+            session.user.tempPermissions = token.tempPermissions as any;
+        }
         return session;
     },
     async jwt({ token, user, trigger, session }) {
         if (user) {
             token.role = user.role;
             token.name = user.name;
+            if (user.tempPermissions) {
+               token.tempPermissions = user.tempPermissions;
+            }
         }
         
         if (trigger === "update" && session?.name) {
             token.name = session.name;
+        }
+        
+        if (trigger === "update" && session?.tempPermissions) {
+            token.tempPermissions = session.tempPermissions;
         }
 
         return token;

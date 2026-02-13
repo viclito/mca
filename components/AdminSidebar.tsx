@@ -21,7 +21,8 @@ import {
   FileSpreadsheet,
   Library,
   FileQuestion,
-  Activity
+  Activity,
+  Users
 } from "lucide-react";
 
 
@@ -41,6 +42,7 @@ const sidebarItems = [
   { label : "Notices" , href : "/admin/notifications" , icon : Megaphone } ,
   { label: "Question Papers", href: "/admin/question-papers", icon: FileQuestion },
   { label: "Information", href: "/admin/information", icon: FileSpreadsheet },
+  { label: "Users", href: "/admin/users", icon: Users },
   { label: "System Logs", href: "/admin/logs", icon: Activity },
 ];
 

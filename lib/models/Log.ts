@@ -17,6 +17,11 @@ const LogSchema = new Schema(
       default: "SYSTEM",
       index: true,
     },
+    restricted: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
     details: {
       type: Schema.Types.Mixed, // Can store any JSON object
     },

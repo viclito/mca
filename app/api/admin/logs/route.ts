@@ -22,6 +22,11 @@ export async function GET(req: Request) {
 
     const query: any = {};
 
+    // Filter restricted logs for non-super_admins
+    if (session.user.role !== "super_admin") {
+        query.restricted = { $ne: true };
+    }
+
     if (level && level !== "ALL") {
       query.level = level;
     }

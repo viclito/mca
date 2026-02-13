@@ -55,6 +55,11 @@ const UserSchema = new Schema(
       type: String, // e.g., "CSI Institute of Technology, Thovalai"
       default: "CSI Institute of Technology, Thovalai",
     },
+    tempPermissions: {
+      canEdit: { type: Boolean, default: false },
+      canDelete: { type: Boolean, default: false },
+      expiresAt: { type: Date },
+    },
   },
   { timestamps: true }
 );

@@ -13,6 +13,7 @@ interface LogOptions {
   ip?: string;
   userAgent?: string;
   category?: string;
+  restricted?: boolean;
 }
 
 export class Logger {
@@ -80,6 +81,7 @@ export class Logger {
         user: userId,
         context,
         category: options.category || "SYSTEM",
+        restricted: options.restricted || false,
         timestamp: new Date(),
       });
 
