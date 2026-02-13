@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import User from "@/lib/models/User";
 import dbConnect from "@/lib/db";
 import { auth } from "@/auth";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: Request) {
   try {
@@ -34,6 +35,12 @@ export async function POST(req: Request) {
         { status: 404 }
       );
     }
+
+    await logger.info("User Rejected/Deleted", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { rejectedUserId: userId } 
+    });
 
     return NextResponse.json(
       { message: "User rejected and removed successfully" },

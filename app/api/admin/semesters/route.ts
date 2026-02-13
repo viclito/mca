@@ -4,6 +4,7 @@ import dbConnect from "@/lib/db";
 import { auth } from "@/auth";
 import slugify from "slugify";
 import Degree from "@/lib/models/Degree";
+import { logger, Logger } from "@/lib/logger";
 
 // Ensure all models are loaded for populate to work
 const models = { Degree, Semester };
@@ -52,6 +53,12 @@ export async function POST(req: Request) {
       degreeId
     });
 
+    await logger.info("Semester Created", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { name, slug, degreeId, semesterId: semester._id } 
+    });
+
     return NextResponse.json(semester, { status: 201 });
   } catch (error) {
     console.error(error);
@@ -75,6 +82,12 @@ export async function DELETE(req: Request) {
 
     await dbConnect();
     await Semester.findByIdAndDelete(id);
+
+    await logger.info("Semester Deleted", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { semesterId: id } 
+    });
 
     return NextResponse.json({ message: "Semester deleted successfully" });
   } catch (error) {
@@ -105,15 +118,28 @@ export async function PUT(req: Request) {
         return NextResponse.json({ message: "Semester already exists in this degree" }, { status: 400 });
     }
 
+    const originalSemester = await Semester.findById(id).lean();
+    if (!originalSemester) {
+        return NextResponse.json({ message: "Semester not found" }, { status: 404 });
+    }
+
     const semester = await Semester.findByIdAndUpdate(
       id,
       { name, slug, degreeId },
       { new: true }
     ).populate("degreeId");
 
-    if (!semester) {
-      return NextResponse.json({ message: "Semester not found" }, { status: 404 });
-    }
+    const changes = Logger.getDiff(originalSemester, { name, slug, degreeId });
+
+    await logger.info("Semester Updated", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { 
+            semesterId: id, 
+            resourceName: originalSemester.name,
+            changes: changes || "No changes detected" 
+        } 
+    });
 
     return NextResponse.json(semester);
   } catch (error) {

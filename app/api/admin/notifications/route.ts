@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import dbConnect from "@/lib/db";
 import Notification from "@/lib/models/Notification";
 import { broadcastNotification } from "@/lib/mail";
+import { logger, Logger } from "@/lib/logger";
+import { auth } from "@/auth";
 
 export async function GET() {
   try {
@@ -58,6 +60,15 @@ export async function POST(req: Request) {
     const origin = new URL(req.url).origin;
     broadcastNotification(title, message, link, images || [], origin).catch(err => console.error("Broadcast failed:", err));
 
+    const session = await auth();
+    if (session?.user) {
+        await logger.info("Notification Created", { 
+            user: session.user.id, 
+            category: "ADMIN",
+            details: { title, type, notificationId: notification._id } 
+        });
+    }
+
     return NextResponse.json(notification);
   } catch (error) {
     console.error("Error creating notification:", error);
@@ -80,15 +91,30 @@ export async function PUT(req: Request) {
        await Notification.updateMany({ _id: { $ne: id }, isMain: true }, { isMain: false });
     }
 
+    const originalNotification = await Notification.findById(id).lean();
+    if (!originalNotification) {
+        return new NextResponse("Notification not found", { status: 404 });
+    }
+
     const notification = await Notification.findByIdAndUpdate(
       id,
       { title, message, type, link, image, images, active, isMain, timetable },
       { new: true }
     );
 
+    const changes = Logger.getDiff(originalNotification, { title, message, type, link, image, images, active, isMain, timetable });
 
-    if (!notification) {
-      return new NextResponse("Notification not found", { status: 404 });
+    const session = await auth();
+    if (session?.user) {
+        await logger.info("Notification Updated", { 
+            user: session.user.id, 
+            category: "ADMIN",
+            details: { 
+                notificationId: id,
+                resourceName: originalNotification.title,
+                changes: changes || "No changes detected"
+            } 
+        });
     }
 
     return NextResponse.json(notification);
@@ -109,6 +135,15 @@ export async function DELETE(req: Request) {
     }
 
     await Notification.findByIdAndDelete(id);
+
+    const session = await auth();
+    if (session?.user) {
+        await logger.info("Notification Deleted", { 
+            user: session.user.id, 
+            category: "ADMIN",
+            details: { notificationId: id } 
+        });
+    }
 
     return NextResponse.json({ message: "Notification deleted successfully" });
   } catch (error) {

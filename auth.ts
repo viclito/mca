@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import dbConnect from "@/lib/db";
 import User from "@/lib/models/User";
 import { authConfig } from "./auth.config";
+import { logger } from "@/lib/logger";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   ...authConfig,
@@ -24,6 +25,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
             if (!user) {
                 console.log("User not found");
+                await logger.warn("Login Failed: User not found", { category: "AUTH", details: { email: credentials.email } });
                 return null;
             }
 
@@ -36,20 +38,26 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
             if (!passwordsMatch) {
                 console.log("Password mismatch");
+                await logger.warn("Login Failed: Password mismatch", { category: "AUTH", details: { email: credentials.email } });
                 return null;
             }
 
             if (user.role === "student" && !user.isEmailVerified) {
                 console.log("Student email not verified");
+                await logger.warn("Login Failed: Email not verified", { category: "AUTH", user: user._id.toString(), details: { email: credentials.email } });
                 throw new Error("Please verify your email before logging in.");
             }
 
             if (!user.isApproved) {
                 console.log("User not approved");
+                await logger.warn("Login Failed: Account not approved", { category: "AUTH", user: user._id.toString(), details: { email: credentials.email } });
                 throw new Error("Account not approved yet.");
             }
 
             console.log("Authorization successful for:", user.email);
+            
+            await logger.info("User Logged In", { category: "AUTH", user: user._id.toString(), details: { email: user.email, role: user.role } });
+
             // Return safe object
             return { 
                 id: user._id.toString(),
@@ -60,6 +68,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             };
         } catch (error) {
             console.error("Authorize error:", error);
+            await logger.error("Login Error", { category: "AUTH", details: { error: String(error), email: credentials?.email } });
             return null;
         }
       },

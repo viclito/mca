@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Content from "@/lib/models/Content";
 import dbConnect from "@/lib/db";
 import { auth } from "@/auth";
+import { logger, Logger } from "@/lib/logger";
 import Unit from "@/lib/models/Unit";
 import Subject from "@/lib/models/Subject";
 import Semester from "@/lib/models/Semester";
@@ -94,6 +95,12 @@ export async function POST(req: Request) {
       unitId
     });
 
+    await logger.info("Content Created", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { title, type, unitId, contentId: newContent._id } 
+    });
+
     return NextResponse.json(newContent, { status: 201 });
   } catch (error: any) {
     console.error('[Content POST Error]:', error);
@@ -121,6 +128,12 @@ export async function DELETE(req: Request) {
     await dbConnect();
     await Content.findByIdAndDelete(id);
 
+    await logger.info("Content Deleted", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { contentId: id } 
+    });
+
     return NextResponse.json({ message: "Content deleted successfully" });
   } catch (error) {
     console.error(error);
@@ -142,15 +155,32 @@ export async function PUT(req: Request) {
 
     await dbConnect();
 
+    // Fetch original content BEFORE update
+    const originalContent = await Content.findById(id).lean();
+    if (!originalContent) {
+        return NextResponse.json({ message: "Content not found" }, { status: 404 });
+    }
+
     const content = await Content.findByIdAndUpdate(
       id,
       { title, type, url, unitId },
       { new: true }
     ).populate('unitId');
 
-    if (!content) {
-      return NextResponse.json({ message: "Content not found" }, { status: 404 });
-    }
+    // Calculate changes
+    // We manually construct the 'new' object for comparison to avoid Mongoose document complexity in diffing
+    const changes = Logger.getDiff(originalContent, { title, type, url });
+
+    await logger.info("Content Updated", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { 
+            contentId: id, 
+            unitId, 
+            resourceName: originalContent.title,
+            changes: changes || "No changes detected" 
+        } 
+    });
 
     return NextResponse.json(content);
   } catch (error) {

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import User from "@/lib/models/User";
 import dbConnect from "@/lib/db";
 import { auth } from "@/auth";
+import { logger } from "@/lib/logger";
 
 export async function POST(req: Request) {
   try {
@@ -43,6 +44,12 @@ export async function POST(req: Request) {
         { status: 404 }
       );
     }
+
+    await logger.info("User Approved", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { approvedUserId: userId, approvedUserEmail: user.email } 
+    });
 
     return NextResponse.json(
       { message: "User approved successfully", user },

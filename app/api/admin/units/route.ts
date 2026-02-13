@@ -3,6 +3,7 @@ import Unit from "@/lib/models/Unit";
 import dbConnect from "@/lib/db";
 import { auth } from "@/auth";
 import slugify from "slugify";
+import { logger, Logger } from "@/lib/logger";
 import Subject from "@/lib/models/Subject";
 import Semester from "@/lib/models/Semester";
 import Degree from "@/lib/models/Degree";
@@ -69,6 +70,12 @@ export async function POST(req: Request) {
       subjectId
     });
 
+    await logger.info("Unit Created", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { name, slug, subjectId, unitId: unit._id } 
+    });
+
     return NextResponse.json(unit, { status: 201 });
   } catch (error: any) {
     console.error(error);
@@ -93,6 +100,12 @@ export async function DELETE(req: Request) {
     await dbConnect();
     await Unit.findByIdAndDelete(id);
 
+    await logger.info("Unit Deleted", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { unitId: id } 
+    });
+
     return NextResponse.json({ message: "Unit deleted successfully" });
   } catch (error: any) {
     console.error(error);
@@ -116,6 +129,11 @@ export async function PUT(req: Request) {
 
     const slug = slugify(name, { lower: true, strict: true });
     
+    const originalUnit = await Unit.findById(id).lean();
+    if (!originalUnit) {
+        return NextResponse.json({ message: "Unit not found" }, { status: 404 });
+    }
+
     const unit = await Unit.findByIdAndUpdate(
       id,
       { name, slug, subjectId },
@@ -128,9 +146,17 @@ export async function PUT(req: Request) {
         }
     });
 
-    if (!unit) {
-      return NextResponse.json({ message: "Unit not found" }, { status: 404 });
-    }
+    const changes = Logger.getDiff(originalUnit, { name, slug, subjectId });
+
+    await logger.info("Unit Updated", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { 
+            unitId: id, 
+            resourceName: originalUnit.name,
+            changes: changes || "No changes detected" 
+        } 
+    });
 
     return NextResponse.json(unit);
   } catch (error: any) {

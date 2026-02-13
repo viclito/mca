@@ -3,6 +3,7 @@ import Degree from "@/lib/models/Degree";
 import dbConnect from "@/lib/db";
 import { auth } from "@/auth";
 import slugify from "slugify";
+import { logger, Logger } from "@/lib/logger";
 
 export async function GET(req: Request) {
   try {
@@ -41,6 +42,12 @@ export async function POST(req: Request) {
       slug,
     });
 
+    await logger.info("Degree Created", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { name, slug, degreeId: degree._id } 
+    });
+
     return NextResponse.json(degree, { status: 201 });
   } catch (error) {
     console.error(error);
@@ -64,6 +71,12 @@ export async function DELETE(req: Request) {
 
     await dbConnect();
     await Degree.findByIdAndDelete(id);
+
+    await logger.info("Degree Deleted", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { degreeId: id } 
+    });
 
     return NextResponse.json({ message: "Degree deleted successfully" });
   } catch (error) {
@@ -94,15 +107,28 @@ export async function PUT(req: Request) {
         return NextResponse.json({ message: "Degree name already exists" }, { status: 400 });
     }
 
+    const originalDegree = await Degree.findById(id).lean();
+    if (!originalDegree) {
+        return NextResponse.json({ message: "Degree not found" }, { status: 404 });
+    }
+
     const degree = await Degree.findByIdAndUpdate(
       id,
       { name, slug },
       { new: true }
     );
 
-    if (!degree) {
-      return NextResponse.json({ message: "Degree not found" }, { status: 404 });
-    }
+    const changes = Logger.getDiff(originalDegree, { name, slug });
+
+    await logger.info("Degree Updated", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { 
+            degreeId: id, 
+            resourceName: originalDegree.name,
+            changes: changes || "No changes detected" 
+        } 
+    });
 
     return NextResponse.json(degree);
   } catch (error) {

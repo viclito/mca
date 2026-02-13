@@ -5,6 +5,7 @@ import { auth } from "@/auth";
 import slugify from "slugify";
 import Semester from "@/lib/models/Semester";
 import Degree from "@/lib/models/Degree";
+import { logger, Logger } from "@/lib/logger";
 
 // Ensure all models are loaded for populate to work
 const models = { Semester, Degree, Subject };
@@ -52,6 +53,12 @@ export async function POST(req: Request) {
       semesterId
     });
 
+    await logger.info("Subject Created", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { name, slug, semesterId, subjectId: subject._id } 
+    });
+
     return NextResponse.json(subject, { status: 201 });
   } catch (error) {
     console.error(error);
@@ -76,6 +83,12 @@ export async function DELETE(req: Request) {
     await dbConnect();
     await Subject.findByIdAndDelete(id);
 
+    await logger.info("Subject Deleted", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { subjectId: id } 
+    });
+
     return NextResponse.json({ message: "Subject deleted successfully" });
   } catch (error) {
     console.error(error);
@@ -99,6 +112,11 @@ export async function PUT(req: Request) {
 
     const slug = slugify(name, { lower: true, strict: true });
     
+    const originalSubject = await Subject.findById(id).lean();
+    if (!originalSubject) {
+        return NextResponse.json({ message: "Subject not found" }, { status: 404 });
+    }
+
     const subject = await Subject.findByIdAndUpdate(
       id,
       { name, slug, semesterId },
@@ -108,9 +126,17 @@ export async function PUT(req: Request) {
         populate: { path: 'degreeId' }
     });
 
-    if (!subject) {
-      return NextResponse.json({ message: "Subject not found" }, { status: 404 });
-    }
+    const changes = Logger.getDiff(originalSubject, { name, slug, semesterId });
+
+    await logger.info("Subject Updated", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { 
+            subjectId: id, 
+            resourceName: originalSubject.name,
+            changes: changes || "No changes detected" 
+        } 
+    });
 
     return NextResponse.json(subject);
   } catch (error) {

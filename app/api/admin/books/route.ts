@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import Book from "@/lib/models/Book";
 import dbConnect from "@/lib/db";
 import { auth } from "@/auth";
+import { logger, Logger } from "@/lib/logger";
 import Subject from "@/lib/models/Subject";
 import Semester from "@/lib/models/Semester";
 import Degree from "@/lib/models/Degree";
@@ -66,6 +67,12 @@ export async function POST(req: Request) {
       subjectId
     });
 
+    await logger.info("Book Created", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { title, subjectId, bookId: newBook._id } 
+    });
+
     return NextResponse.json(newBook, { status: 201 });
   } catch (error) {
     console.error(error);
@@ -90,6 +97,12 @@ export async function DELETE(req: Request) {
     await dbConnect();
     await Book.findByIdAndDelete(id);
 
+    await logger.info("Book Deleted", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { bookId: id } 
+    });
+
     return NextResponse.json({ message: "Book deleted successfully" });
   } catch (error) {
     console.error(error);
@@ -111,15 +124,28 @@ export async function PUT(req: Request) {
 
     await dbConnect();
 
+    const originalBook = await Book.findById(id).lean();
+    if (!originalBook) {
+        return NextResponse.json({ message: "Book not found" }, { status: 404 });
+    }
+
     const book = await Book.findByIdAndUpdate(
       id,
       { title, url, subjectId },
       { new: true }
     ).populate('subjectId');
 
-    if (!book) {
-      return NextResponse.json({ message: "Book not found" }, { status: 404 });
-    }
+    const changes = Logger.getDiff(originalBook, { title, url, subjectId });
+
+    await logger.info("Book Updated", { 
+        user: session.user.id, 
+        category: "ADMIN",
+        details: { 
+            bookId: id, 
+            resourceName: originalBook.title,
+            changes: changes || "No changes detected" 
+        } 
+    });
 
     return NextResponse.json(book);
   } catch (error) {
